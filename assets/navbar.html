@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<nav class="navbar navbar-expand-lg navbar-dark bg-transparent sticky-top" style="backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,212,255,0.3);">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="dashboard.php">
+      <img src="assets/logo.png" alt="NetChat" width="40" height="40" class="me-2 rounded-3" style="box-shadow: 0 4px 12px rgba(0,212,255,0.3);">
+      <span class="netchat-title fw-bold fs-3">NetChat</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link link-netchat px-3 py-2" href="dashboard.php"><i class="fas fa-home me-1"></i> Accueil</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link-netchat px-3 py-2" href="#"><i class="fas fa-users me-1"></i> Amis</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link-netchat px-3 py-2" href="#"><i class="fas fa-envelope me-1"></i> Messages</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle link-netchat px-3 py-2" href="#" role="button" data-bs-toggle="dropdown">
+            <img src="<?= htmlspecialchars($user['profilepicture'] ?? 'assets/user_icon.png') ?>" class="rounded-circle profile-pic" width="50" height="50" alt="Profil">
+
+            <?= htmlspecialchars($_SESSION['username'] ?? 'User') ?>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profil</a></li>
+            <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i> Déconnexion</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+</html>

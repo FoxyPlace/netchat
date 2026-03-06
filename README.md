@@ -1,2 +1,2 @@
 # netchat
-Reseaux social semblable a twitter.
+Un reseaux social, semblable a twitter.
