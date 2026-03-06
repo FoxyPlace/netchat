@@ -59,54 +59,118 @@ if ($_POST && $_POST['action'] === 'register') {
     $confirm_password = $_POST['confirm_password'];
     $phone = trim($_POST['phone'] ?? '');
     $birthdate = $_POST['birthdate'] ?? '';
-    
-    // Validation
+
+    $errors = [];
+
+    // Vérification mots de passe identiques
     if ($password !== $confirm_password) {
-        $error = "Les mots de passe ne correspondent pas";
-    } elseif (strlen($username) < 3 || strlen($username) > 20 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-        $error = "Pseudo invalide (3-20 caractères, lettres/chiffres/_)";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Email invalide";
-    } elseif (strlen($password) < 6) {
-        $error = "Mot de passe trop court (6 caractères minimum)";
-    } elseif (!empty($phone) && !preg_match('/^[\+]?[0-9\s\-\(\)]{10,15}$/', $phone)) {
-        $error = "Numéro de téléphone invalide";
-    } elseif (!empty($birthdate) && (strtotime($birthdate) === false || strtotime($birthdate) > strtotime('-13 years'))) {
-        $error = "Date de naissance invalide (minimum 13 ans)";
+        $errors[] = "Les mots de passe ne correspondent pas";
+    }
+
+    // Vérification pseudo
+    if (strlen($username) < 3 || strlen($username) > 20 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        $errors[] = "Pseudo invalide (3-20 caractères, lettres/chiffres/_)";
+    }
+
+    // Vérification email
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Email invalide";
+    }
+
+    // Sécurité mot de passe
+    if (strlen($password) < 8) {
+        $errors[] = "Mot de passe trop court (8 caractères minimum)";
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins une majuscule";
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins une minuscule";
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins un chiffre";
+    }
+    if (!preg_match('/[\W_]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins un caractère spécial";
+    }
+
+    // Empêcher pseudo dans le mot de passe
+    if (stripos($password, $username) !== false) {
+        $errors[] = "Le mot de passe ne doit pas contenir votre pseudo";
+    }
+
+    // Date obligatoire
+    if (empty($birthdate)) {
+        $errors[] = "La date de naissance est obligatoire";
+    } else {
+        if (strtotime($birthdate) === false) {
+            $errors[] = "Format de date invalide";
+        } elseif (strtotime($birthdate) > strtotime('-13 years')) {
+            $errors[] = "Vous devez avoir au moins 13 ans";
+        }
+
+        // Empêcher date dans le mot de passe
+        $birthParts = explode('-', $birthdate);
+        $year = $birthParts[0];
+        $month = $birthParts[1];
+        $day = $birthParts[2];
+
+        if (
+            stripos($password, $year) !== false ||
+            stripos($password, $month) !== false ||
+            stripos($password, $day) !== false ||
+            stripos($password, str_replace('-', '', $birthdate)) !== false
+        ) {
+            $errors[] = "Le mot de passe ne doit pas contenir votre date de naissance";
+        }
+    }
+
+    // Vérification téléphone
+    if (!empty($phone) && !preg_match('/^[\+]?[0-9\s\-\(\)]{10,15}$/', $phone)) {
+        $errors[] = "Numéro de téléphone invalide";
+    }
+
+    // Si erreurs → stop
+    if (!empty($errors)) {
+        $error = "<ul>";
+        foreach ($errors as $e) {
+            $error .= "<li>$e</li>";
+        }
+        $error .= "</ul>";
     } else {
         // Vérif doublon
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
         $stmt->execute([$username, $email]);
-        
+
         if ($stmt->rowCount() == 0) {
-    $hash = password_hash($password, PASSWORD_DEFAULT);
-    $profilepic_filename = 'assets/user_icon.png'; // Défaut
-    
-    // PHOTO UPLOAD
-    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-        try {
-            $profilepic_filename = uploadAndCropProfilePic($_FILES['profile_picture']['tmp_name']);
-            error_log("Photo saved: $profilepic_filename"); // Debug log
-        } catch (Exception $e) {
-            error_log("Photo fail: " . $e->getMessage());
+
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $profilepic_filename = 'assets/user_icon.png';
+
+            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+                try {
+                    $profilepic_filename = uploadAndCropProfilePic($_FILES['profile_picture']['tmp_name']);
+                } catch (Exception $e) {
+                    error_log("Photo fail: " . $e->getMessage());
+                }
+            }
+
+            $age = floor((time() - strtotime($birthdate)) / (365.25 * 24 * 3600));
+
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
+            if ($stmt->execute([$username, $email, $hash, $phone, $age, $profilepic_filename])) {
+                $_SESSION['userid'] = $pdo->lastInsertId();
+                $_SESSION['username'] = $username;
+                header('Location: dashboard.php');
+                exit;
+            } else {
+                $error = "Pseudo ou email déjà utilisé";
+            }
         }
     }
-    
-    $age = !empty($birthdate) ? floor((time() - strtotime($birthdate)) / (365.25 * 24 * 3600)) : null;
-    
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
-    if ($stmt->execute([$username, $email, $hash, $phone, $age, $profilepic_filename])) {
-        $_SESSION['userid'] = $pdo->lastInsertId();
-        $_SESSION['username'] = $username;
-        $success = "✅ Inscription OK ! Photo: $profilepic_filename";
-        header('Location: dashboard.php');
-        exit;
-    } else {
-        $error = "Pseudo ou email déjà utilisé";
-    }
 }
-    }
-}
+
+
 
 ?>
 
