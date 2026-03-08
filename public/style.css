@@ -1,0 +1,168 @@
+:root {
+    --primary-white: #FFFFFF;
+    --primary-blue: #00D4FF;
+    --secondary-blue: #0099CC;
+    --light-blue: #E3F6FF;
+    --bg-gradient: linear-gradient(135deg, #E3F6FF 0%, #FFFFFF 100%);
+}
+
+body {
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.netchat-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+    border-radius: 24px;
+}
+
+.netchat-title {
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    text-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+}
+
+.form-control:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    border: none;
+    border-radius: 16px;
+    padding: 12px 40px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+}
+
+/* === ICÔNES CORRIGÉES === */
+.input-group-wrapper {
+    position: relative;
+}
+
+.floating-icon {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    font-size: 18px;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.2);
+}
+
+.form-control {
+    padding-left: 70px !important;
+    border-radius: 16px;
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background: white;
+    border-color: var(--primary-blue);
+}
+
+.link-netchat {
+    color: var(--primary-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.link-netchat:hover {
+    color: var(--secondary-blue);
+    text-decoration: underline;
+}
+.input-group-wrapper {
+    margin-bottom: 1.5rem;
+}
+
+.invalid-feedback {
+    position: absolute;
+    bottom: -25px;
+    left: 0;
+    width: 100%;
+    font-size: 0.8rem;
+    padding-left: 70px;
+    margin-top: 2px;
+}
+
+.input-group-wrapper .form-control.is-invalid {
+    border-color: #dc3545;
+    background: rgba(255, 240, 240, 0.9);
+}
+
+.input-group-wrapper .form-control.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Hauteur fixe pour éviter décalages */
+.input-group-wrapper {
+    min-height: 75px;
+}
+
+.form-control {
+    padding-left: 70px !important;
+    padding-right: 60px !important;
+    min-height: 55px;
+    border-radius: 16px;
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Logo navbar/titre */
+.navbar-brand img, .title-logo {
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.navbar-brand img:hover, .title-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
+}
+
+/* Bouton affichage/masquage mot de passe */
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    z-index: 15;
+}
+
+.password-toggle:hover {
+    color: #4b5563;
+}
+
+.profile-pic { border-radius: 50% !important; object-fit: cover; }
+.crop-container { position: relative; height: 200px; overflow: hidden; margin-top: 10px; }
+
+
+

@@ -1,0 +1,15 @@
+# Autoriser l'accès aux fichiers statiques et API
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Laisser passer les fichiers PHP directs (API, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_FILENAME} \.php$
+    RewriteRule ^(.*)$ - [L]
+    # Laisser passer les fichiers statiques
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^(.*)$ - [L]
+    # Sinon, rediriger vers index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
