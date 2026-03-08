@@ -1,0 +1,27 @@
+# Fichiers de configuration sensibles
+config.php
+.env
+*.log
+
+# Photos uploadées par les utilisateurs
+assets/users_profile_pictures/*
+!assets/users_profile_pictures/.gitkeep
+
+# Fichiers temporaires
+temp/
+*.tmp
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Base de données (si fichiers SQL de backup)
+*.sql.backup
+*.sql.bak

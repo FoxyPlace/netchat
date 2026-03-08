@@ -1,0 +1,23 @@
+.settings-nav {
+    border-right: 2px solid rgba(0, 212, 255, 0.2);
+}
+.settings-nav .nav-link {
+    color: #666;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+.settings-nav .nav-link:hover,
+.settings-nav .nav-link.active {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+.settings-content {
+    min-height: 400px;
+}
+/* Ajustement léger des icônes dans les champs des paramètres */
+.settings-content .input-group-wrapper .floating-icon {
+    top: 52%;
+}

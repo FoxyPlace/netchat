@@ -9,47 +9,7 @@ try {
     die("Erreur DB: " . $e->getMessage());
 }
 
-// Fonction photo (copie EXACTE)
-function uploadAndCropProfilePic($tmp_file) {
-    $target_dir = 'assets/users_profile_pictures/';
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-    
-    $random_hex = substr(bin2hex(random_bytes(4)), 0, 8);
-    $timestamp = (int)(microtime(true) * 1000);
-    $filename = $random_hex . '_' . $timestamp . '.jpg';
-    $target_file = $target_dir . $filename;
-    
-    // Vérif taille/type
-    if ($_FILES['profile_picture']['size'] > 5242880) { // 5Mo
-        throw new Exception('Trop grande');
-    }
-    
-    $source = imagecreatefromstring(file_get_contents($tmp_file));
-    if (!$source) throw new Exception('Image invalide');
-    
-    $size = getimagesize($tmp_file);
-    $thumb_size = 400;
-    $src_w = $size[0]; $src_h = $size[1];
-    $dst_x = ($src_w > $thumb_size) ? ($src_w - $thumb_size)/2 : 0;
-    $dst_y = ($src_h > $thumb_size) ? ($src_h - $thumb_size)/2 : 0;
-    
-    $thumb = imagecreatetruecolor($thumb_size, $thumb_size);
-    imagecopyresampled($thumb, $source, 0, 0, $dst_x, $dst_y, $thumb_size, $thumb_size, $thumb_size, $thumb_size);
-    imagejpeg($thumb, $target_file, 85);
-    
-    imagedestroy($source);
-    imagedestroy($thumb);
-    
-    return $target_file;
-}
-
-
-
-
-
-$error = '';
+$errorMessages = [];
 $success = '';
 
 if ($_POST && $_POST['action'] === 'register') {
@@ -132,11 +92,8 @@ if ($_POST && $_POST['action'] === 'register') {
 
     // Si erreurs → stop
     if (!empty($errors)) {
-        $error = "<ul>";
-        foreach ($errors as $e) {
-            $error .= "<li>$e</li>";
-        }
-        $error .= "</ul>";
+        // On garde toutes les erreurs pour les afficher proprement dans la vue
+        $errorMessages = $errors;
     } else {
         // Vérif doublon
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
@@ -145,26 +102,19 @@ if ($_POST && $_POST['action'] === 'register') {
         if ($stmt->rowCount() == 0) {
 
             $hash = password_hash($password, PASSWORD_DEFAULT);
+            // Image de profil par défaut
             $profilepic_filename = 'assets/user_icon.png';
 
-            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-                try {
-                    $profilepic_filename = uploadAndCropProfilePic($_FILES['profile_picture']['tmp_name']);
-                } catch (Exception $e) {
-                    error_log("Photo fail: " . $e->getMessage());
-                }
-            }
-
             $age = floor((time() - strtotime($birthdate)) / (365.25 * 24 * 3600));
-
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
-            if ($stmt->execute([$username, $email, $hash, $phone, $age, $profilepic_filename])) {
+            
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, birthdate, profile_picture) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt->execute([$username, $email, $hash, $phone, $age, $birthdate, $profilepic_filename])) {
                 $_SESSION['userid'] = $pdo->lastInsertId();
                 $_SESSION['username'] = $username;
                 header('Location: dashboard.php');
                 exit;
             } else {
-                $error = "Pseudo ou email déjà utilisé";
+                $errorMessages[] = "Pseudo ou email déjà utilisé";
             }
         }
     }
@@ -198,14 +148,18 @@ if ($_POST && $_POST['action'] === 'register') {
                             <img src="assets/logo.png" alt="NetChat" width="60" height="60" class="me-3" style="border-radius: 16px;">
                             <h1 class="netchat-title display-4 fw-bold mb-0">NetChat</h1>
                         </div>
-                        <p class="text-muted lead">Crée ton compte et rejoins la conversation</p>
+                        <p class="text-muted lead">Créer ton compte et rejoins la conversation</p>
                     </div>
 
                     <!-- Messages d'erreur/succès -->
-                    <?php if ($error): ?>
+                    <?php if (!empty($errorMessages)): ?>
                         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            <?= htmlspecialchars($error) ?>
+                            <ul class="mb-0 text-start">
+                                <?php foreach ($errorMessages as $msg): ?>
+                                    <li><?= htmlspecialchars($msg) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
@@ -260,6 +214,9 @@ if ($_POST && $_POST['action'] === 'register') {
             <div class="floating-icon"><i class="fas fa-lock"></i></div>
             <input type="password" name="password" id="password" class="form-control form-control-lg py-3" 
                    placeholder="Mot de passe" required minlength="6">
+            <button type="button" class="password-toggle" data-target="password">
+                <i class="fas fa-eye"></i>
+            </button>
             <div class="invalid-feedback">6 caractères minimum</div>
         </div>
 
@@ -267,17 +224,11 @@ if ($_POST && $_POST['action'] === 'register') {
             <div class="floating-icon"><i class="fas fa-lock-open"></i></div>
             <input type="password" name="confirm_password" id="confirmPassword" class="form-control form-control-lg py-3" 
                    placeholder="Confirmer" required>
+            <button type="button" class="password-toggle" data-target="confirmPassword">
+                <i class="fas fa-eye"></i>
+            </button>
             <div class="invalid-feedback">Ne correspondent pas</div>
         </div>
-
-        <div class="input-group-wrapper mb-4">
-    <div class="floating-icon"><i class="fas fa-camera"></i></div>
-    <input type="file" name="profile_picture" id="profile_picture" class="form-control form-control-lg py-3" accept="image/*" data-cropper>
-    <div class="invalid-feedback">Image JPG/PNG (max 5Mo)</div>
-    <div class="crop-preview mt-2" style="display:none;">
-        <img id="crop-preview" class="rounded-circle mx-auto d-block" width="100" height="100" style="object-fit:cover;">
-    </div>
-</div>
 
         <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">
             <i class="fas fa-rocket me-2"></i>S'inscrire
@@ -348,37 +299,29 @@ if ($_POST && $_POST['action'] === 'register') {
             }
         });
 
-        <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.1/dist/cropper.css">
-<script src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>
-<script>
-let cropper;
-document.getElementById('profile_picture').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const img = document.getElementById('crop-preview');
-            img.src = ev.target.result;
-            img.style.display = 'block';
-            img.parentElement.style.display = 'block';
-            
-            // Init Cropper (carré 1:1)
-            const cropContainer = document.createElement('div');
-            cropContainer.innerHTML = `<img id="crop-image" src="${ev.target.result}">`;
-            img.parentElement.appendChild(cropContainer);
-            
-            cropper = new Cropper(document.getElementById('crop-image'), {
-                aspectRatio: 1,
-                viewMode: 1,
-                autoCropArea: 0.8,
-                preview: '#crop-preview'
-            });
-        };
-        reader.readAsDataURL(file);
-    }
-});
-</script>
+        // Affichage / masquage du mot de passe
+        document.querySelectorAll('.password-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
 
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (icon) {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    }
+                } else {
+                    input.type = 'password';
+                    if (icon) {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
