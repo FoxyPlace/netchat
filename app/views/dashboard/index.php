@@ -118,7 +118,7 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="nc-suggest-user-name">Utilisateur 1</div>
                         <div class="nc-suggest-user-handle">@user1</div>
                     </div>
-                    <button class="nc-suggest-btn">Suivre</button>
+                    <button class="nc-suggest-btn" data-user="2">Suivre</button>
                 </div>
                 <div class="nc-suggest-user">
                     <img src="<?= $basePath ?? '/netchat/public' ?>/assets/user_icon.png" alt="User">
@@ -126,7 +126,7 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="nc-suggest-user-name">Utilisateur 2</div>
                         <div class="nc-suggest-user-handle">@user2</div>
                     </div>
-                    <button class="nc-suggest-btn">Suivre</button>
+                    <button class="nc-suggest-btn" data-user="3">Suivre</button>
                 </div>
                 <div class="nc-suggest-user">
                     <img src="<?= $basePath ?? '/netchat/public' ?>/assets/user_icon.png" alt="User">
@@ -134,7 +134,7 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="nc-suggest-user-name">Utilisateur 3</div>
                         <div class="nc-suggest-user-handle">@user3</div>
                     </div>
-                    <button class="nc-suggest-btn">Suivre</button>
+                    <button class="nc-suggest-btn" data-user="4">Suivre</button>
                 </div>
             </div>
         </div>
@@ -175,6 +175,32 @@ include __DIR__ . '/../layouts/header.php';
             
             let html = '';
             data.posts.forEach(post => {
+                // Construire le contenu en linkifiant uniquement les mentions validées côté serveur
+                function escapeHtml(str) {
+                    return String(str)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                }
+                function escapeRegExp(str) {
+                    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                }
+
+                let content = escapeHtml(post.content || '');
+                // Linkifier les mentions fournies par l'API
+                if (post.mentions && post.mentions.length) {
+                    post.mentions.forEach(m => {
+                        const username = m.username;
+                        const uid = m.mentioned_user_id;
+                        const re = new RegExp('@' + escapeRegExp(username) + '\\b', 'g');
+                        content = content.replace(re, `<a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=${uid}" class="text-primary">@${username}</a>`);
+                    });
+                }
+                // Hashtags
+                content = content.replace(/#\w+/g, m => `<a href="<?= $basePath ?? '/netchat/public' ?>/hashtag?tag=${m.slice(1)}" class="text-primary">${m}</a>`);
+
                 html += `
                 <div class="col-12 mb-4">
                     <div class="netchat-card p-4">
@@ -189,10 +215,7 @@ include __DIR__ . '/../layouts/header.php';
                                 <small class="text-muted"><i class="fas fa-clock me-1"></i>${relativeTime(post.created_at)}</small>
                             </div>
                         </div>
-                        <p class="fs-5 mb-3">${post.content
-                            .replace(/#\w+/g, m => `<a href="/netchat/hashtag?tag=${m.slice(1)}" class="text-primary">${m}</a>`)
-                            .replace(/@\w+/g, m => `<a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=${post.user_id}" class="text-primary">${m}</a>`)
-                        }</p>
+                        <p class="fs-5 mb-3">${content}</p>
                         ${post.image_url ? `<img src="<?= $basePath ?? '/netchat/public' ?>/${post.image_url}" class="img-fluid rounded-3 mb-3" style="max-height:400px;">` : ''}
                         <div class="d-flex gap-3">
                             <button class="btn btn-outline-primary btn-sm like-btn" data-post="${post.id}"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</button>
@@ -226,6 +249,60 @@ include __DIR__ . '/../layouts/header.php';
     });
     
     loadPosts();
+
+    // Follow buttons in suggestion card (if data-user attribute present)
+    document.addEventListener('click', async function(e) {
+        // Follow buttons in suggestion card
+        const suggestBtn = e.target.closest('.nc-suggest-btn');
+        if (suggestBtn) {
+            const targetId = suggestBtn.getAttribute('data-user');
+            if (!targetId) return;
+            try {
+                const form = new FormData();
+                form.append('target_id', targetId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/follow_toggle.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                // Toggle button text
+                suggestBtn.textContent = data.following ? 'Se désabonner' : 'Suivre';
+            } catch (err) {
+                console.error(err);
+            }
+            return;
+        }
+
+        // Like buttons
+        const likeBtn = e.target.closest('.like-btn');
+        if (likeBtn) {
+            const postId = likeBtn.getAttribute('data-post');
+            if (!postId) return;
+            try {
+                const form = new FormData();
+                form.append('post_id', postId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/post_like.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                // Update UI: count and active state
+                likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> ${data.count}`;
+                if (data.liked) {
+                    likeBtn.classList.remove('btn-outline-primary');
+                    likeBtn.classList.add('btn-primary');
+                } else {
+                    likeBtn.classList.remove('btn-primary');
+                    likeBtn.classList.add('btn-outline-primary');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+            return;
+        }
+    });
 </script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

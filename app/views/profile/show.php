@@ -75,7 +75,7 @@ include __DIR__ . '/../layouts/header.php';
                             <!-- Stats discrètes type X : abonnés + date d'arrivée -->
                             <div class="d-flex justify-content-center align-items-center gap-3 mb-3 text-muted small">
                                 <span>
-                                    <strong><?= (int)($profile_user['followers_count'] ?? 0) ?></strong>
+                                    <strong id="followersCount"><?= (int)($profile_user['followers_count'] ?? 0) ?></strong>
                                     abonné<?= (($profile_user['followers_count'] ?? 0) > 1 ? 's' : '') ?>
                                 </span>
                                 <?php if (!empty($profile_user['created_at'])): ?>
@@ -101,6 +101,12 @@ include __DIR__ . '/../layouts/header.php';
                                 <a href="<?= $basePath ?? '/netchat/public' ?>/settings" class="btn btn-primary btn-lg mt-3">
                                     <i class="fas fa-edit me-2"></i>Modifier le profil
                                 </a>
+                            <?php else: ?>
+                                <!-- Bouton s'abonner / se désabonner -->
+                                <button id="followBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($isFollowing) ? 'btn-outline-secondary' : 'btn-primary') ?> btn-lg mt-3">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    <span id="followBtnText"><?= (!empty($isFollowing) ? 'Se désabonner' : "S'abonner") ?></span>
+                                </button>
                             <?php endif; ?>
                         </div>
                         
@@ -177,3 +183,42 @@ include __DIR__ . '/../layouts/header.php';
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const followBtn = document.getElementById('followBtn');
+    if (!followBtn) return;
+    followBtn.addEventListener('click', async function() {
+        const target = this.getAttribute('data-user');
+        if (!target) return;
+        try {
+            const form = new FormData();
+            form.append('target_id', target);
+            const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/follow_toggle.php', { method: 'POST', body: form });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            // Update button text and style
+            const textEl = document.getElementById('followBtnText');
+            if (data.following) {
+                followBtn.classList.remove('btn-primary');
+                followBtn.classList.add('btn-outline-secondary');
+                if (textEl) textEl.textContent = 'Se désabonner';
+            } else {
+                followBtn.classList.remove('btn-outline-secondary');
+                followBtn.classList.add('btn-primary');
+                if (textEl) textEl.textContent = "S'abonner";
+            }
+            // Update followers count
+            const cntEl = document.getElementById('followersCount');
+            if (cntEl && typeof data.followers_count !== 'undefined') {
+                cntEl.textContent = data.followers_count;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+});
+</script>

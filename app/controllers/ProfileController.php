@@ -38,6 +38,11 @@ class ProfileController extends BaseController {
             $user_profile_picture = 'assets/user_icon.png';
         }
         
+        // Déterminer si l'utilisateur courant suit ce profil
+        require_once __DIR__ . '/../models/Follow.php';
+        $followModel = new Follow($this->db);
+        $isFollowing = $followModel->isFollowing($_SESSION['user_id'], $profile_user_id);
+
         $this->view('profile/show', [
             'profile_user' => $profile_user,
             'profile_user_id' => $profile_user_id,
@@ -45,6 +50,7 @@ class ProfileController extends BaseController {
             'profile_picture' => $profile_picture,
             'current_user' => $current_user,
             'user_profile_picture' => $user_profile_picture
+            ,'isFollowing' => $isFollowing
         ]);
     }
 }

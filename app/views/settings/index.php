@@ -159,6 +159,15 @@ include __DIR__ . '/../layouts/header.php';
                                     <i class="fas fa-save me-2"></i>Enregistrer
                                 </button>
                             </form>
+                            
+                            <!-- Section déconnexion -->
+                            <hr class="my-4">      
+                            <div class="d-flex justify-content-end">
+                                <!-- Appel MVC : route /logout gérée par LogoutController -->
+                                <a href="<?= $basePath ?>/logout" class="btn btn-outline-danger">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Se déconnecter
+                                </a>
+                            </div>
                         </div>
                         
                         <!-- Section Compte -->
