@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Rediriger toutes les requêtes vers public/index.php sauf si le fichier existe
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/index.php [QSA,L]
+
+# Autoriser l'accès direct aux fichiers dans public/
+RewriteCond %{REQUEST_URI} ^/netchat/public/
+RewriteRule ^(.*)$ - [L]

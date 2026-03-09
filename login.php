@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-// Redir si connecté
+// Redir si connecté vers l'app publique
 if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
+    header("Location: /netchat/public");
     exit();
 }
 
@@ -29,7 +29,7 @@ if ($_POST) {
     if ($user && password_verify($password, $user['password_hash'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        header("Location: dashboard.php");
+        header("Location: /netchat/public/dashboard");
         exit();
     } else {
         $error = "Identifiants incorrects";
