@@ -11,7 +11,7 @@ class Database {
             // Connection to Aiven MySQL service
             $dsn = 'mysql:host=netchat-netchat.i.aivencloud.com;port=13911;dbname=netchat;charset=utf8mb4;ssl_mode=REQUIRED';
             $user = 'avnadmin';
-            $pass = 'AVNS_-mk_dITiGa0x6UxHo_G';
+            //$pass = 'AVNS_-mk_dITiGa0x6UxHo_G';
 
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
