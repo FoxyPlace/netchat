@@ -1,10 +1,10 @@
 <?php
 session_start();
 
-// Connexion DB
+// Connexion DB (Aiven)
 try {
-    $pdo = new PDO("mysql:host=127.0.0.1;dbname=netchat;charset=utf8mb4", 'root', '');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $dsn = 'mysql:host=netchat-netchat.i.aivencloud.com;port=13911;dbname=netchat;charset=utf8mb4;ssl_mode=REQUIRED';
+    $pdo = new PDO($dsn, 'avnadmin', 'AVNS_-mk_dITiGa0x6UxHo_G', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 } catch(PDOException $e) {
     die("Erreur DB: " . $e->getMessage());
 }
