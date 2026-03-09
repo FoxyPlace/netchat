@@ -139,7 +139,7 @@ include __DIR__ . '/../layouts/header.php';
                                                         <h6 class="mb-1 fw-bold link-netchat"><?= htmlspecialchars($profile_user['username']) ?></h6>
                                                         <small class="text-muted">
                                                             <i class="fas fa-clock me-1"></i>
-                                                            <?= date('d/m/Y à H:i', strtotime($post['created_at'])) ?>
+                                                            <?= relativeTime($post['created_at']) ?>
                                                         </small>
                                                     </div>
                                                 </div>

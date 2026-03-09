@@ -144,6 +144,20 @@ include __DIR__ . '/../layouts/header.php';
 <script>
     let offset = 0;
     
+    function relativeTime(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return "à l'instant";
+        if (diff < 3600) return Math.floor(diff / 60) + 'm';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'j';
+        if (diff < 2592000) return Math.floor(diff / 604800) + ' sem';
+        if (diff < 31536000) return Math.floor(diff / 2592000) + ' mois';
+        const years = Math.floor(diff / 31536000);
+        return years + ' an' + (years > 1 ? 's' : '');
+    }
+    
     function loadPosts() {
         fetch(`<?= $basePath ?? '/netchat/public' ?>/api_posts.php?offset=${offset}&limit=10`)
         .then(r => r.json())
@@ -172,7 +186,7 @@ include __DIR__ . '/../layouts/header.php';
                                 <a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=${post.user_id}" class="text-decoration-none">
                                     <h6 class="mb-1 fw-bold link-netchat">${post.username}</h6>
                                 </a>
-                                <small class="text-muted">${new Date(post.created_at).toLocaleDateString('fr-FR')}</small>
+                                <small class="text-muted"><i class="fas fa-clock me-1"></i>${relativeTime(post.created_at)}</small>
                             </div>
                         </div>
                         <p class="fs-5 mb-3">${post.content

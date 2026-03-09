@@ -11,6 +11,7 @@ class BaseController {
     }
     
     protected function view($viewName, $data = []) {
+        require_once __DIR__ . '/helpers.php';
         // Définir le chemin de base pour les assets
         $data['basePath'] = '/netchat/public';
         extract($data);
