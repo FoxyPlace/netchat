@@ -23,6 +23,23 @@ class BaseController {
     }
     
     protected function redirect($url) {
+        // If absolute URL, use it as-is
+        if (preg_match('#^https?://#i', $url)) {
+            header('Location: ' . $url);
+            exit;
+        }
+
+        // If URL already targets the public folder, leave it
+        if (strpos($url, '/netchat/public') === 0) {
+            header('Location: ' . $url);
+            exit;
+        }
+
+        // For routes starting with '/', prefix with /netchat/public so they resolve to the public router
+        if (strpos($url, '/') === 0) {
+            $url = '/netchat/public' . $url;
+        }
+
         header('Location: ' . $url);
         exit;
     }

@@ -159,9 +159,9 @@ if ($_POST && $_POST['action'] === 'register') {
 
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
             if ($stmt->execute([$username, $email, $hash, $phone, $age, $profilepic_filename])) {
-                $_SESSION['userid'] = $pdo->lastInsertId();
+                $_SESSION['user_id'] = $pdo->lastInsertId();
                 $_SESSION['username'] = $username;
-                header('Location: public/#');
+                header('Location: /netchat/public/dashboard');
                 exit;
             } else {
                 $error = "Pseudo ou email déjà utilisé";

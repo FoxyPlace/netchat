@@ -143,6 +143,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <script>
     let offset = 0;
+    const currentUserId = <?= (int)($_SESSION['user_id'] ?? 0) ?>;
     
     function relativeTime(dateStr) {
         const date = new Date(dateStr);
@@ -220,6 +221,7 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="d-flex gap-3">
                             <button class="btn btn-outline-primary btn-sm like-btn" data-post="${post.id}"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</button>
                             <button class="btn btn-outline-primary btn-sm"><i class="fas fa-comment"></i> Commenter</button>
+                            ${post.user_id === currentUserId ? `<button class="btn btn-outline-danger btn-sm delete-btn" data-post="${post.id}"><i class="fas fa-trash"></i> Supprimer</button>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -268,6 +270,30 @@ include __DIR__ . '/../layouts/header.php';
                 }
                 // Toggle button text
                 suggestBtn.textContent = data.following ? 'Se désabonner' : 'Suivre';
+            } catch (err) {
+                console.error(err);
+            }
+            return;
+        }
+
+        // Delete buttons
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (deleteBtn) {
+            const postId = deleteBtn.getAttribute('data-post');
+            if (!postId) return;
+            if (!confirm('Voulez-vous vraiment supprimer ce post ?')) return;
+            try {
+                const form = new FormData();
+                form.append('post_id', postId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/post_delete.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                // Supprimer l'élément du DOM
+                const root = deleteBtn.closest('.col-12');
+                if (root) root.remove();
             } catch (err) {
                 console.error(err);
             }

@@ -13,7 +13,8 @@ class AuthController extends BaseController {
     public function login() {
         // Redir si déjà connecté
         if (isset($_SESSION['user_id'])) {
-            $this->redirect('/dashboard');
+            // Use absolute public path to avoid routing issues in local env
+            $this->redirect('/netchat/public/');
         }
         
         $error = '';
@@ -29,7 +30,7 @@ class AuthController extends BaseController {
             if ($user && password_verify($password, $user['password_hash'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                $this->redirect('/dashboard');
+                $this->redirect('/netchat/public/');
             } else {
                 $error = "Identifiants incorrects";
             }
@@ -41,7 +42,8 @@ class AuthController extends BaseController {
     public function register() {
         // Redir si déjà connecté
         if (isset($_SESSION['user_id'])) {
-            $this->redirect('/dashboard');
+            // Use absolute public path to avoid routing issues in local env
+            $this->redirect('/netchat/public/');
         }
         
         $errorMessages = [];
@@ -76,7 +78,7 @@ class AuthController extends BaseController {
                     ])) {
                         $_SESSION['user_id'] = $this->db->lastInsertId();
                         $_SESSION['username'] = $username;
-                        $this->redirect('/dashboard');
+                        $this->redirect('/netchat/public/');
                     } else {
                         $errorMessages[] = "Erreur lors de l'inscription";
                     }
@@ -91,7 +93,8 @@ class AuthController extends BaseController {
     
     public function logout() {
         session_destroy();
-        $this->redirect('/login');
+        // Redirect to public login page
+        $this->redirect('/netchat/public/login');
     }
     
     private function validateRegistration($username, $email, $password, $confirm_password, $phone, $birthdate) {
