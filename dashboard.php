@@ -7,8 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $dsn = 'mysql:host=netchat-netchat.i.aivencloud.com;port=13911;dbname=netchat;charset=utf8mb4;ssl_mode=REQUIRED';
-    $pdo = new PDO($dsn, 'avnadmin', 'AVNS_-mk_dITiGa0x6UxHo_G', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $pdo = new PDO('mysql:host=127.0.0.1;dbname=netchat;charset=utf8mb4', 'root', '');
     $stmt = $pdo->prepare("SELECT followers_count FROM users WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch();
