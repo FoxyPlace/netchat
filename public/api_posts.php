@@ -18,7 +18,14 @@ try {
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
     
     $posts = $postModel->findAll($offset, $limit);
-    
+    // Enrich posts with is_following for current user
+    $stmtFollow = $db->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?");
+    $userId = (int)$_SESSION['user_id'];
+    foreach ($posts as &$p) {
+        $stmtFollow->execute([$userId, (int)$p['user_id']]);
+        $p['is_following'] = (bool)$stmtFollow->fetch(PDO::FETCH_ASSOC);
+    }
+
     echo json_encode(['posts' => $posts]);
 } catch (Exception $e) {
     echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);

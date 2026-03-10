@@ -211,7 +211,8 @@ include __DIR__ . '/../layouts/header.php';
                             </a>
                             <div>
                                 <a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=${post.user_id}" class="text-decoration-none">
-                                    <h6 class="mb-1 fw-bold link-netchat">${post.username}</h6>
+                                    <h6 class="mb-1 fw-bold link-netchat d-inline">${post.username}</h6>
+                                    <button class="btn btn-sm btn-outline-primary ms-2 subscribe-btn" data-user="${post.user_id}">${post.is_following ? 'Se désabonner' : "S'abonner"}</button>
                                 </a>
                                 <small class="text-muted"><i class="fas fa-clock me-1"></i>${relativeTime(post.created_at)}</small>
                             </div>
@@ -326,6 +327,36 @@ include __DIR__ . '/../layouts/header.php';
             } catch (err) {
                 console.error(err);
             }
+            return;
+        }
+
+        // Subscribe buttons in post header
+        const subBtn = e.target.closest('.subscribe-btn');
+        if (subBtn) {
+            const targetId = subBtn.getAttribute('data-user');
+            if (!targetId) return;
+            try {
+                const form = new FormData();
+                form.append('target_id', targetId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/follow_toggle.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                subBtn.textContent = data.following ? 'Se désabonner' : "S'abonner";
+                // If on profile of target, update followBtn text if present
+                const followBtn = document.getElementById('followBtn');
+                const textEl = document.getElementById('followBtnText');
+                if (followBtn && textEl && followBtn.getAttribute('data-user') == targetId) {
+                    if (data.following) {
+                        followBtn.classList.remove('btn-primary');
+                        followBtn.classList.add('btn-outline-secondary');
+                        textEl.textContent = 'Se désabonner';
+                    } else {
+                        followBtn.classList.remove('btn-outline-secondary');
+                        followBtn.classList.add('btn-primary');
+                        textEl.textContent = "S'abonner";
+                    }
+                }
+            } catch (err) { console.error(err); }
             return;
         }
     });

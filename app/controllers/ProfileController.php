@@ -43,6 +43,13 @@ class ProfileController extends BaseController {
         $followModel = new Follow($this->db);
         $isFollowing = $followModel->isFollowing($_SESSION['user_id'], $profile_user_id);
 
+    // Statut ami / demande
+    require_once __DIR__ . '/../models/Friend.php';
+    $friendModel = new Friend($this->db);
+    $isFriend = $friendModel->areFriends($_SESSION['user_id'], $profile_user_id);
+    $outgoingRequest = $friendModel->getStatus($_SESSION['user_id'], $profile_user_id) === 'pending';
+    $incomingRequest = $friendModel->getStatus($profile_user_id, $_SESSION['user_id']) === 'pending';
+
         $this->view('profile/show', [
             'profile_user' => $profile_user,
             'profile_user_id' => $profile_user_id,
@@ -51,6 +58,9 @@ class ProfileController extends BaseController {
             'current_user' => $current_user,
             'user_profile_picture' => $user_profile_picture
             ,'isFollowing' => $isFollowing
+            ,'isFriend' => $isFriend
+            ,'outgoingRequest' => $outgoingRequest
+            ,'incomingRequest' => $incomingRequest
         ]);
     }
 }

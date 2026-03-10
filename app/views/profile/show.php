@@ -102,11 +102,25 @@ include __DIR__ . '/../layouts/header.php';
                                     <i class="fas fa-edit me-2"></i>Modifier le profil
                                 </a>
                             <?php else: ?>
-                                <!-- Bouton s'abonner / se désabonner -->
-                                <button id="followBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($isFollowing) ? 'btn-outline-secondary' : 'btn-primary') ?> btn-lg mt-3">
-                                    <i class="fas fa-user-plus me-2"></i>
-                                    <span id="followBtnText"><?= (!empty($isFollowing) ? 'Se désabonner' : "S'abonner") ?></span>
-                                </button>
+                                <!-- Bouton s'abonner / se désabonner et demande d'amis -->
+                                    <div class="d-flex justify-content-center gap-2 mt-3">
+                                        <button id="followBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($isFollowing) ? 'btn-outline-secondary' : 'btn-primary') ?> btn-lg">
+                                            <i class="fas fa-user-plus me-2"></i>
+                                            <span id="followBtnText"><?= (!empty($isFollowing) ? 'Se désabonner' : "S'abonner") ?></span>
+                                        </button>
+
+                                        <?php if (!empty($isFriend)): ?>
+                                            <button id="friendBtn" class="btn btn-secondary btn-lg">Amis</button>
+                                        <?php else: ?>
+                                            <?php if (!empty($incomingRequest)): ?>
+                                                <button id="friendAcceptBtn" data-user="<?= $profile_user_id ?>" class="btn btn-success btn-lg">Accepter</button>
+                                            <?php else: ?>
+                                                <button id="friendBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($outgoingRequest) ? 'btn-outline-secondary' : 'btn-outline-primary') ?> btn-lg">
+                                                    <span id="friendBtnText"><?= (!empty($outgoingRequest) ? 'Demande envoyée' : 'Demande d\'amis') ?></span>
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                             <?php endif; ?>
                         </div>
                         
@@ -220,5 +234,56 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(err);
         }
     });
+    // Friend request toggle
+    const friendBtn = document.getElementById('friendBtn');
+    if (friendBtn) {
+        friendBtn.addEventListener('click', async function() {
+            const target = this.getAttribute('data-user');
+            if (!target) return;
+            try {
+                const form = new FormData();
+                form.append('target_id', target);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/friend_toggle.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                const textEl = document.getElementById('friendBtnText');
+                if (data.requested) {
+                    if (textEl) textEl.textContent = 'Demande envoyée';
+                    friendBtn.classList.remove('btn-outline-primary');
+                    friendBtn.classList.add('btn-outline-secondary');
+                } else {
+                    if (textEl) textEl.textContent = 'Demande d\'amis';
+                    friendBtn.classList.remove('btn-outline-secondary');
+                    friendBtn.classList.add('btn-outline-primary');
+                }
+            } catch (err) { console.error(err); }
+        });
+    }
+
+    // Accept friend request (incoming)
+    const friendAcceptBtn = document.getElementById('friendAcceptBtn');
+    if (friendAcceptBtn) {
+        friendAcceptBtn.addEventListener('click', async function() {
+            const requester = this.getAttribute('data-user');
+            if (!requester) return;
+            try {
+                const form = new FormData();
+                form.append('requester_id', requester);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/friend_accept.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                if (data.accepted) {
+                    // replace buttons
+                    this.textContent = 'Amis';
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-secondary');
+                    const followBtn = document.getElementById('followBtn');
+                    if (followBtn) {
+                        // no automatic action on follow
+                    }
+                }
+            } catch (err) { console.error(err); }
+        });
+    }
 });
 </script>
