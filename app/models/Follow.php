@@ -10,7 +10,7 @@ class Follow {
     }
 
     public function isFollowing($userId, $targetId) {
-        $stmt = $this->db->prepare("SELECT id FROM friendships WHERE user_id = ? AND friend_id = ? AND status = 'accepted'");
+        $stmt = $this->db->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?");
         $stmt->execute([$userId, $targetId]);
         return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -18,8 +18,8 @@ class Follow {
     public function follow($userId, $targetId) {
         try {
             $this->db->beginTransaction();
-            // Insert or update to accepted
-            $stmt = $this->db->prepare("INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, 'accepted') ON DUPLICATE KEY UPDATE status = 'accepted'");
+            // Insert into follows
+            $stmt = $this->db->prepare("INSERT IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)");
             $stmt->execute([$userId, $targetId]);
 
             // Increment followers_count of target
@@ -37,7 +37,7 @@ class Follow {
     public function unfollow($userId, $targetId) {
         try {
             $this->db->beginTransaction();
-            $del = $this->db->prepare("DELETE FROM friendships WHERE user_id = ? AND friend_id = ?");
+            $del = $this->db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
             $del->execute([$userId, $targetId]);
 
             // Decrement followers_count but not below 0

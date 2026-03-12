@@ -211,7 +211,8 @@ include __DIR__ . '/../layouts/header.php';
                             </a>
                             <div>
                                 <a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=${post.user_id}" class="text-decoration-none">
-                                    <h6 class="mb-1 fw-bold link-netchat">${post.username}</h6>
+                                    <h6 class="mb-1 fw-bold link-netchat d-inline">${post.username}</h6>
+                                    <button class="btn btn-sm btn-outline-primary ms-2 subscribe-btn" data-user="${post.user_id}">${post.is_following ? 'Se désabonner' : "S'abonner"}</button>
                                 </a>
                                 <small class="text-muted"><i class="fas fa-clock me-1"></i>${relativeTime(post.created_at)}</small>
                             </div>
@@ -220,8 +221,26 @@ include __DIR__ . '/../layouts/header.php';
                         ${post.image_url ? `<img src="<?= $basePath ?? '/netchat/public' ?>/${post.image_url}" class="img-fluid rounded-3 mb-3" style="max-height:400px;">` : ''}
                         <div class="d-flex gap-3">
                             <button class="btn btn-outline-primary btn-sm like-btn" data-post="${post.id}"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</button>
-                            <button class="btn btn-outline-primary btn-sm"><i class="fas fa-comment"></i> Commenter</button>
+                            <button class="btn btn-outline-primary btn-sm comment-btn" data-post="${post.id}"><i class="fas fa-comment"></i> Commenter (${post.comments_count || 0})</button>
                             ${post.user_id === currentUserId ? `<button class="btn btn-outline-danger btn-sm delete-btn" data-post="${post.id}"><i class="fas fa-trash"></i> Supprimer</button>` : ''}
+                        </div>
+
+                        <div class="mt-3 post-comments" data-post="${post.id}">
+                            ${post.comments && post.comments.length ? post.comments.map(c => `
+                                <div class="d-flex align-items-start mb-2 comment-item" data-comment="${c.id}">
+                                    <img src="<?= $basePath ?? '/netchat/public' ?>/${c.profile_picture || 'assets/user_icon.png'}" class="rounded-circle me-2" width="40" height="40" style="object-fit:cover;">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small mb-1">${escapeHtml(c.username)} <span class="text-muted small">• ${relativeTime(c.created_at)}</span></div>
+                                        <div class="small">${escapeHtml(c.content)}</div>
+                                    </div>
+                                    ${c.user_id == currentUserId ? `<button class="btn btn-sm btn-outline-danger ms-2 comment-inline-delete" data-comment="${c.id}">Supprimer</button>` : ''}
+                                </div>
+                            `).join('') : '<div class="text-muted small">Pas de commentaires</div>'}
+
+                            <div class="d-flex gap-2 mt-2">
+                                <input type="text" class="form-control form-control-sm comment-input" data-post="${post.id}" placeholder="Répondre...">
+                                <button class="btn btn-sm btn-primary comment-send" data-post="${post.id}">OK</button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -249,6 +268,89 @@ include __DIR__ . '/../layouts/header.php';
             setTimeout(() => document.getElementById('postMessage').innerHTML = '', 3000);
         }
     });
+
+    async function openCommentsModal(postId) {
+        // fetch comments
+        const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/api_comments.php?post_id=' + encodeURIComponent(postId));
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+
+        // build modal HTML
+        const modalId = 'nc-comments-modal';
+        let modal = document.getElementById(modalId);
+        if (modal) modal.remove();
+
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'nc-modal-backdrop';
+        modal.style.position = 'fixed'; modal.style.left = 0; modal.style.top = 0; modal.style.right = 0; modal.style.bottom = 0;
+        modal.style.background = 'rgba(0,0,0,0.4)'; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
+
+        const box = document.createElement('div');
+        box.className = 'nc-modal-box';
+        box.style.background = '#fff'; box.style.padding = '16px'; box.style.width = '600px'; box.style.maxHeight = '80vh'; box.style.overflow = 'auto'; box.style.borderRadius = '8px';
+
+        box.innerHTML = `<h5>Commentaires</h5><div id="nc-comments-list"></div><hr><div><textarea id="nc-comment-input" class="form-control" rows="3" placeholder="Écrire un commentaire..."></textarea><div class="d-flex justify-content-end mt-2"><button id="nc-comment-send" class="btn btn-primary">Envoyer</button> <button id="nc-comment-close" class="btn btn-secondary ms-2">Fermer</button></div></div>`;
+        modal.appendChild(box);
+        document.body.appendChild(modal);
+
+        const listEl = box.querySelector('#nc-comments-list');
+
+        function renderComments(items) {
+            listEl.innerHTML = '';
+            if (!items || !items.length) { listEl.innerHTML = '<p class="text-muted">Aucun commentaire</p>'; return; }
+            items.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'd-flex align-items-start gap-3 p-2';
+                el.innerHTML = `
+                    <img src="<?= $basePath ?? '/netchat/public' ?>/${c.profile_picture || 'assets/user_icon.png'}" width="40" height="40" style="object-fit:cover;border-radius:50%">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">${escapeHtml(c.username)} <small class="text-muted">${relativeTime(c.created_at)}</small></div>
+                        <div>${escapeHtml(c.content)}</div>
+                    </div>
+                `;
+                if (c.user_id == currentUserId) {
+                    const del = document.createElement('button');
+                    del.className = 'btn btn-sm btn-outline-danger ms-2';
+                    del.textContent = 'Supprimer';
+                    del.addEventListener('click', async () => {
+                        if (!confirm('Supprimer ce commentaire ?')) return;
+                        const form = new FormData(); form.append('comment_id', c.id);
+                        const r = await fetch('<?= $basePath ?? '/netchat/public' ?>/comment/delete', { method: 'POST', body: form });
+                        const j = await r.json();
+                        if (j.error) { alert(j.error); return; }
+                        // refresh list
+                        const newRes = await fetch('<?= $basePath ?? '/netchat/public' ?>/api_comments.php?post_id=' + encodeURIComponent(postId));
+                        const newData = await newRes.json();
+                        renderComments(newData.comments);
+                    });
+                    el.appendChild(del);
+                }
+                listEl.appendChild(el);
+            });
+        }
+
+        renderComments(data.comments || []);
+
+        box.querySelector('#nc-comment-close').addEventListener('click', () => modal.remove());
+        box.querySelector('#nc-comment-send').addEventListener('click', async () => {
+            const txt = box.querySelector('#nc-comment-input').value.trim();
+            if (!txt) return;
+            const form = new FormData();
+            form.append('post_id', postId);
+            form.append('content', txt);
+            const r = await fetch('<?= $basePath ?? '/netchat/public' ?>/comment/create', { method: 'POST', body: form });
+            const j = await r.json();
+            if (j.error) { alert(j.error); return; }
+            box.querySelector('#nc-comment-input').value = '';
+            // re-render
+            const newRes = await fetch('<?= $basePath ?? '/netchat/public' ?>/api_comments.php?post_id=' + encodeURIComponent(postId));
+            const newData = await newRes.json();
+            renderComments(newData.comments);
+            // also refresh posts (to update comments_count)
+            loadPosts();
+        });
+    }
     
     loadPosts();
 
@@ -300,6 +402,44 @@ include __DIR__ . '/../layouts/header.php';
             return;
         }
 
+        // Inline comment send
+        const commentSend = e.target.closest('.comment-send');
+        if (commentSend) {
+            const postId = commentSend.getAttribute('data-post');
+            const input = document.querySelector(`.comment-input[data-post="${postId}"]`);
+            if (!input) return;
+            const val = input.value.trim();
+            if (!val) return;
+            try {
+                const form = new FormData();
+                form.append('post_id', postId);
+                form.append('content', val);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/comment/create', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                // refresh comments for this post by reloading posts (simpler)
+                loadPosts();
+            } catch (err) { console.error(err); }
+            return;
+        }
+
+        // Inline comment delete
+        const commentInlineDel = e.target.closest('.comment-inline-delete');
+        if (commentInlineDel) {
+            const commentId = commentInlineDel.getAttribute('data-comment');
+            if (!commentId) return;
+            if (!confirm('Supprimer ce commentaire ?')) return;
+            try {
+                const form = new FormData();
+                form.append('comment_id', commentId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/comment/delete', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                loadPosts();
+            } catch (err) { console.error(err); }
+            return;
+        }
+
         // Like buttons
         const likeBtn = e.target.closest('.like-btn');
         if (likeBtn) {
@@ -326,6 +466,47 @@ include __DIR__ . '/../layouts/header.php';
             } catch (err) {
                 console.error(err);
             }
+            return;
+        }
+
+        // Comment buttons - open modal listing comments and add new
+        const commentBtn = e.target.closest('.comment-btn');
+        if (commentBtn) {
+            const postId = commentBtn.getAttribute('data-post');
+            if (!postId) return;
+            try {
+                await openCommentsModal(postId);
+            } catch (err) { console.error(err); }
+            return;
+        }
+
+        // Subscribe buttons in post header
+        const subBtn = e.target.closest('.subscribe-btn');
+        if (subBtn) {
+            const targetId = subBtn.getAttribute('data-user');
+            if (!targetId) return;
+            try {
+                const form = new FormData();
+                form.append('target_id', targetId);
+                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/follow_toggle.php', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+                subBtn.textContent = data.following ? 'Se désabonner' : "S'abonner";
+                // If on profile of target, update followBtn text if present
+                const followBtn = document.getElementById('followBtn');
+                const textEl = document.getElementById('followBtnText');
+                if (followBtn && textEl && followBtn.getAttribute('data-user') == targetId) {
+                    if (data.following) {
+                        followBtn.classList.remove('btn-primary');
+                        followBtn.classList.add('btn-outline-secondary');
+                        textEl.textContent = 'Se désabonner';
+                    } else {
+                        followBtn.classList.remove('btn-outline-secondary');
+                        followBtn.classList.add('btn-primary');
+                        textEl.textContent = "S'abonner";
+                    }
+                }
+            } catch (err) { console.error(err); }
             return;
         }
     });

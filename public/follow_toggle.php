@@ -19,24 +19,24 @@ try {
         exit;
     }
 
-    // Vérifier si déjà suivi
-    $stmt = $db->prepare("SELECT id FROM friendships WHERE user_id = ? AND friend_id = ? AND status = 'accepted'");
+    // Vérifier si déjà suivi (table follows)
+    $stmt = $db->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?");
     $stmt->execute([$userId, $targetId]);
     $exists = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($exists) {
         // unfollow
         $db->beginTransaction();
-        $del = $db->prepare("DELETE FROM friendships WHERE id = ?");
-        $del->execute([$exists['id']]);
+        $del = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
+        $del->execute([$userId, $targetId]);
         $upd = $db->prepare("UPDATE users SET followers_count = GREATEST(followers_count - 1, 0) WHERE id = ?");
         $upd->execute([$targetId]);
         $db->commit();
         $following = false;
     } else {
-        // follow - insert accepted
+        // follow - insert into follows
         $db->beginTransaction();
-        $ins = $db->prepare("INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, 'accepted')");
+        $ins = $db->prepare("INSERT IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)");
         $ins->execute([$userId, $targetId]);
         $upd = $db->prepare("UPDATE users SET followers_count = followers_count + 1 WHERE id = ?");
         $upd->execute([$targetId]);
