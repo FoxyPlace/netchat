@@ -42,6 +42,10 @@ $router->get('/profil', 'ProfileController', 'show');
 $router->get('/settings', 'SettingsController', 'index');
 $router->post('/settings', 'SettingsController', 'index');
 
+// Comments (MVC)
+$router->post('/comment/create', 'CommentController', 'create');
+$router->post('/comment/delete', 'CommentController', 'delete');
+
 // Routes mot de passe
 $router->get('/password/edit', 'PasswordController', 'edit');
 $router->post('/password/edit', 'PasswordController', 'edit');

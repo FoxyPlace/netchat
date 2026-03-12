@@ -16,10 +16,12 @@ class Post {
             SELECT p.*, 
                    u.username, 
                    u.profile_picture,
-                   COUNT(DISTINCT r.id) as likes
+             COUNT(DISTINCT r.id) as likes,
+             COUNT(DISTINCT c.id) as comments_count
             FROM posts p
             INNER JOIN users u ON p.user_id = u.id
             LEFT JOIN reactions r ON p.id = r.post_id AND r.reaction_type = 'like'
+            LEFT JOIN comments c ON p.id = c.post_id
             GROUP BY p.id
             ORDER BY p.created_at DESC
             LIMIT " . $limit . " OFFSET " . $offset . "
@@ -29,9 +31,21 @@ class Post {
 
         // Pour chaque post, récupérer les mentions associées
         $mentionStmt = $this->db->prepare("SELECT pm.mentioned_user_id, u.username, pm.mention_position FROM post_mentions pm JOIN users u ON pm.mentioned_user_id = u.id WHERE pm.post_id = ?");
+        // prepare comment model if available
+        $commentModel = null;
+        if (file_exists(__DIR__ . '/Comment.php')) {
+            require_once __DIR__ . '/Comment.php';
+            if (class_exists('Comment')) $commentModel = new Comment($this->db);
+        }
         foreach ($posts as &$post) {
             $mentionStmt->execute([$post['id']]);
             $post['mentions'] = $mentionStmt->fetchAll(PDO::FETCH_ASSOC);
+            // attach comments if model available
+            if ($commentModel) {
+                $post['comments'] = $commentModel->findByPost((int)$post['id']);
+            } else {
+                $post['comments'] = [];
+            }
         }
 
         return $posts;
