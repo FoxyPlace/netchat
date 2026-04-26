@@ -50,6 +50,64 @@ class Post {
 
         return $posts;
     }
+
+    /**
+     * Recherche de posts : texte du post, auteur (username), ou hashtag présent dans le contenu.
+     * $needle : texte saisi (sans obligation de commencer par # pour les hashtags).
+     */
+    public function searchPosts($needle, $offset = 0, $limit = 10) {
+        $limit = (int)$limit;
+        $offset = (int)$offset;
+        $needle = trim((string)$needle);
+        if ($needle === '') {
+            return [];
+        }
+
+        $tagSearch = ltrim($needle, '#');
+        $likeContent = '%' . $needle . '%';
+        $likeUser = '%' . $needle . '%';
+        $likeTag = '%#' . $tagSearch . '%';
+
+        $stmt = $this->db->prepare("
+            SELECT p.*, 
+                   u.username, 
+                   u.profile_picture,
+             COUNT(DISTINCT r.id) as likes,
+             COUNT(DISTINCT c.id) as comments_count
+            FROM posts p
+            INNER JOIN users u ON p.user_id = u.id
+            LEFT JOIN reactions r ON p.id = r.post_id AND r.reaction_type = 'like'
+            LEFT JOIN comments c ON p.id = c.post_id
+            WHERE p.content LIKE ?
+               OR u.username LIKE ?
+               OR p.content LIKE ?
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
+            LIMIT " . $limit . " OFFSET " . $offset . "
+        ");
+        $stmt->execute([$likeContent, $likeUser, $likeTag]);
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $mentionStmt = $this->db->prepare("SELECT pm.mentioned_user_id, u.username, pm.mention_position FROM post_mentions pm JOIN users u ON pm.mentioned_user_id = u.id WHERE pm.post_id = ?");
+        $commentModel = null;
+        if (file_exists(__DIR__ . '/Comment.php')) {
+            require_once __DIR__ . '/Comment.php';
+            if (class_exists('Comment')) {
+                $commentModel = new Comment($this->db);
+            }
+        }
+        foreach ($posts as &$post) {
+            $mentionStmt->execute([$post['id']]);
+            $post['mentions'] = $mentionStmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($commentModel) {
+                $post['comments'] = $commentModel->findByPost((int)$post['id']);
+            } else {
+                $post['comments'] = [];
+            }
+        }
+
+        return $posts;
+    }
     
     public function findByUserId($userId, $limit = 20) {
         $limit = (int)$limit; // S'assurer que c'est un entier
@@ -118,5 +176,47 @@ class Post {
             return array_values($usernames);
         }
         return [];
+    }
+
+    /**
+     * Hashtags extraits des contenus des posts les plus récents, triés par fréquence.
+     * @return string[] libellés du type #MonTag
+     */
+    public function trendingHashtagsFromRecentPosts(int $postSample = 220, int $maxReturn = 48): array {
+        $postSample = max(40, min(500, $postSample));
+        $maxReturn = max(8, min(80, $maxReturn));
+        $stmt = $this->db->query("
+            SELECT content FROM posts
+            ORDER BY created_at DESC
+            LIMIT " . (int)$postSample . "
+        ");
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        $stats = [];
+        foreach ($rows as $content) {
+            if (!preg_match_all('/#([A-Za-z0-9_]{1,50})\b/u', (string)$content, $m)) {
+                continue;
+            }
+            foreach ($m[1] as $t) {
+                if ($t === '') {
+                    continue;
+                }
+                $key = mb_strtolower($t);
+                if (!isset($stats[$key])) {
+                    $stats[$key] = ['n' => 0, 'display' => '#' . $t];
+                }
+                $stats[$key]['n']++;
+            }
+        }
+        uasort($stats, static function ($a, $b) {
+            return $b['n'] <=> $a['n'];
+        });
+        $out = [];
+        foreach ($stats as $row) {
+            $out[] = $row['display'];
+            if (count($out) >= $maxReturn) {
+                break;
+            }
+        }
+        return $out;
     }
 }

@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mar. 10 mars 2026 à 07:57
--- Version du serveur : 9.1.0
--- Version de PHP : 8.3.14
+-- Généré le : dim. 26 avr. 2026 à 16:22
+-- Version du serveur : 8.4.7
+-- Version de PHP : 8.3.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `follows` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_follow` (`follower_id`,`following_id`),
   KEY `idx_following` (`following_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `follows`
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS `follows` (
 
 INSERT INTO `follows` (`id`, `follower_id`, `following_id`, `created_at`) VALUES
 (7, 3, 2, '2026-03-10 07:36:59'),
-(8, 4, 3, '2026-03-10 07:39:42'),
-(9, 3, 4, '2026-03-10 07:45:23');
+(11, 5, 1, '2026-04-25 10:29:27'),
+(13, 1, 5, '2026-04-25 13:40:52');
 
 -- --------------------------------------------------------
 
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `friendships` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_friendship` (`user_id`,`friend_id`),
   KEY `friend_id` (`friend_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `friendships`
@@ -127,6 +127,35 @@ CREATE TABLE IF NOT EXISTS `messages` (
   PRIMARY KEY (`id`),
   KEY `sender_id` (`sender_id`),
   KEY `receiver_id` (`receiver_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `messages`
+--
+
+INSERT INTO `messages` (`id`, `sender_id`, `receiver_id`, `content`, `is_read`, `created_at`) VALUES
+(1, 5, 1, 'Salut', 1, '2026-04-25 13:41:09'),
+(2, 1, 5, 'Salut mec', 1, '2026-04-25 13:41:14'),
+(3, 5, 1, 'eeee*', 1, '2026-04-25 14:00:38');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `message_requests`
+--
+
+DROP TABLE IF EXISTS `message_requests`;
+CREATE TABLE IF NOT EXISTS `message_requests` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `requester_id` int NOT NULL,
+  `target_id` int NOT NULL,
+  `status` enum('pending','accepted','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_request` (`requester_id`,`target_id`),
+  KEY `idx_target_status` (`target_id`,`status`),
+  KEY `idx_requester` (`requester_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -139,7 +168,7 @@ DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
-  `type` enum('friend_request','friend_accept','follow','mention','message','system') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('friend_request','friend_accept','follow','mention','message','system','like','comment','message_request') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `actor_id` int DEFAULT NULL,
   `target_id` int DEFAULT NULL,
   `data` json DEFAULT NULL,
@@ -148,7 +177,17 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   PRIMARY KEY (`id`),
   KEY `idx_user_read` (`user_id`,`is_read`),
   KEY `idx_user_time` (`user_id`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `type`, `actor_id`, `target_id`, `data`, `is_read`, `created_at`) VALUES
+(1, 1, 'follow', 5, NULL, NULL, 1, '2026-04-25 10:29:27'),
+(4, 5, 'follow', 1, NULL, NULL, 1, '2026-04-25 13:40:52'),
+(5, 1, 'message', 5, NULL, '{\"excerpt\": \"Salut\", \"message_id\": 1}', 1, '2026-04-25 13:41:09'),
+(6, 5, 'message', 1, NULL, '{\"excerpt\": \"Salut mec\", \"message_id\": 2}', 1, '2026-04-25 13:41:14');
 
 -- --------------------------------------------------------
 
@@ -166,7 +205,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `posts`
@@ -178,9 +217,8 @@ INSERT INTO `posts` (`id`, `user_id`, `content`, `image_url`, `created_at`, `upd
 (3, 3, 'test @Malenia', NULL, '2026-03-09 12:46:26', '2026-03-09 12:46:26'),
 (4, 3, 'test @karim', NULL, '2026-03-09 12:50:28', '2026-03-09 12:50:28'),
 (6, 2, '@FoxyTheBigYT et @Malenia mes reufs', 'assets/posts/69aec54ad3a22_1773061450.jpg', '2026-03-09 13:04:10', '2026-03-09 13:04:10'),
-(7, 4, 'Bonjour !', 'assets/posts/69aedcfc5b311_1773067516.webp', '2026-03-09 14:45:16', '2026-03-09 14:45:16'),
 (8, 3, 'coucou @Jeffrey_E', NULL, '2026-03-10 07:44:33', '2026-03-10 07:44:33'),
-(9, 4, 'sss', NULL, '2026-03-10 07:45:14', '2026-03-10 07:45:14');
+(16, 1, 'Statue de la liberté ! #nyc #voyage', 'assets/posts/69ee37feb4d3b_1777219582.jpg', '2026-04-26 16:06:22', '2026-04-26 16:06:22');
 
 -- --------------------------------------------------------
 
@@ -207,8 +245,7 @@ CREATE TABLE IF NOT EXISTS `post_mentions` (
 INSERT INTO `post_mentions` (`id`, `post_id`, `mentioned_user_id`, `mention_position`, `created_at`) VALUES
 (1, 3, 2, 5, '2026-03-09 12:47:55'),
 (4, 6, 3, 0, '2026-03-09 13:04:10'),
-(5, 6, 2, 17, '2026-03-09 13:04:10'),
-(6, 8, 4, 7, '2026-03-10 07:44:33');
+(5, 6, 2, 17, '2026-03-09 13:04:10');
 
 -- --------------------------------------------------------
 
@@ -226,17 +263,15 @@ CREATE TABLE IF NOT EXISTS `reactions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_reaction` (`post_id`,`user_id`,`reaction_type`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `reactions`
 --
 
 INSERT INTO `reactions` (`id`, `post_id`, `user_id`, `reaction_type`, `created_at`) VALUES
-(10, 6, 4, 'like', '2026-03-09 14:45:20'),
 (11, 6, 3, 'like', '2026-03-09 14:47:10'),
 (12, 1, 3, 'like', '2026-03-09 14:47:15'),
-(13, 8, 4, 'like', '2026-03-10 07:44:54'),
 (14, 8, 3, 'like', '2026-03-10 07:44:56');
 
 -- --------------------------------------------------------
@@ -289,17 +324,17 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `unique_google` (`google_id`),
   UNIQUE KEY `unique_github` (`github_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `phone`, `age`, `birthdate`, `profile_picture`, `followers_count`, `bio`, `status`, `account_type`, `is_verified`, `created_at`, `last_login`, `google_id`, `github_id`, `provider`) VALUES
-(1, 'johndoe', 'johndoe@gmail.com', '$2y$10$0s.VSeeLI88LkW1Sv8UnJuQYI9ED.aeYmd5gAov22UogAfXM7i7wK', NULL, 21, '2005-02-22', 'assets/users_profile_pictures/03474d2f_1772997355024.jpg', 0, 'Bonjour ! je suis dev\r\n\r\nfull stack', 'offline', 'user', 0, '2026-03-05 16:16:18', '2026-03-08 21:08:00', NULL, NULL, 'local'),
+(1, 'johndoe', 'johndoe@gmail.com', '$2y$10$0s.VSeeLI88LkW1Sv8UnJuQYI9ED.aeYmd5gAov22UogAfXM7i7wK', NULL, 21, '2005-02-22', 'assets/users_profile_pictures/f59cd0ad_1777219613713.jpg', 1, 'Bonjour', 'offline', 'user', 0, '2026-03-05 16:16:18', '2026-04-25 10:08:28', NULL, NULL, 'local'),
 (2, 'Malenia', 'malenia@eldenring.fs', '$2y$10$d3IRYdadjRdYgiRBXOnMI.l15tfN7qVBxX7j.c151h/42vUZob3VS', '01 65 45 32 52', 400, '1625-08-07', 'assets/user_icon.png', 3, NULL, 'offline', 'user', 0, '2026-03-09 10:17:29', '2026-03-09 13:23:44', NULL, NULL, 'local'),
 (3, 'FoxyTheBigYT', 'enzoingelaere@gmail.com', '$2y$10$j8Bcs/t7lShM7adM9yG7vupXnIYf00ELQ/npO66m4Oujcq16fWkKO', '06 67 30 65 59', 19, '2006-10-23', 'assets/user_icon.png', 1, NULL, 'offline', 'user', 0, '2026-03-09 10:25:56', '2026-03-10 07:39:07', NULL, NULL, 'local'),
-(4, 'Jeffrey_E', 'jeffrey.e@gmail.com', '$2y$10$QGgB5Rr9kRJE4ewahiX4/uc7x0Kk.gYiPBzmHlAOBez2P0BypmUOi', '06 67 30 65 54', 48, NULL, 'assets/user_icon.png', 1, NULL, 'offline', 'user', 0, '2026-03-09 14:43:12', '2026-03-09 14:45:25', NULL, NULL, 'local');
+(5, 'testeur', 'testeur@gmail.com', '$2y$10$kleAbAmP4pMTYUV/jW/aze9zep8ZId.bJuhtH9vMBLBoKwz7Km9.q', '', 13, NULL, 'assets/user_icon.png', 1, NULL, 'offline', 'user', 0, '2026-04-25 10:11:45', '2026-04-25 12:32:26', NULL, NULL, 'local');
 
 --
 -- Contraintes pour les tables déchargées

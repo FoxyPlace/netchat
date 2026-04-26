@@ -29,7 +29,7 @@ if ($_POST) {
     if ($user && password_verify($password, $user['password_hash'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        header("Location: /netchat/public/dashboard");
+        header("Location: /netchat/public/");
         exit();
     } else {
         $error = "Identifiants incorrects";

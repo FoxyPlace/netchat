@@ -34,6 +34,11 @@ $router->get('/logout', 'LogoutController', 'logout');
 $router->get('/', 'DashboardController', 'index');
 $router->get('/dashboard', 'DashboardController', 'index');
 
+// Notifications + Chat
+$router->get('/notifications', 'NotificationsController', 'index');
+$router->get('/chat', 'ChatController', 'index');
+$router->get('/search', 'SearchController', 'index');
+
 // Routes profil
 $router->get('/profile', 'ProfileController', 'show');
 $router->get('/profil', 'ProfileController', 'show');

@@ -97,7 +97,7 @@ try {
 .replace(/#\w+/g, m => `<a href="hashtag.php?tag=${m.slice(1)}" class="text-primary">${m}</a>`)
 .replace(/@\w+/g, m => `<a href="profile.php?id=${post.user_id}" class="text-primary">${m}</a>`)
 }</p>
-                        ${post.image_url ? `<img src="${post.image_url}" class="img-fluid rounded-3 mb-3" style="max-height:400px;">` : ''}
+                        ${post.image_url ? (() => { const u = post.image_url; const ext = u.split('.').pop().toLowerCase(); const v = ['mp4','webm','mov','m4v'].includes(ext); return v ? `<div class="nc-post-media nc-post-media--video"><video src="${u}" controls playsinline preload="metadata"></video></div>` : `<div class="nc-post-media"><img src="${u}" alt=""></div>`; })() : ''}
                         <div class="d-flex gap-3">
                             <button class="btn btn-outline-primary btn-sm like-btn" data-post="${post.id}"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</button>
                             <button class="btn btn-outline-primary btn-sm"><i class="fas fa-comment"></i> Commenter</button>

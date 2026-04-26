@@ -10,40 +10,7 @@ try {
 }
 
 // Fonction photo (copie EXACTE)
-function uploadAndCropProfilePic($tmp_file) {
-    $target_dir = 'assets/users_profile_pictures/';
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-    
-    $random_hex = substr(bin2hex(random_bytes(4)), 0, 8);
-    $timestamp = (int)(microtime(true) * 1000);
-    $filename = $random_hex . '_' . $timestamp . '.jpg';
-    $target_file = $target_dir . $filename;
-    
-    // Vérif taille/type
-    if ($_FILES['profile_picture']['size'] > 5242880) { // 5Mo
-        throw new Exception('Trop grande');
-    }
-    
-    $source = imagecreatefromstring(file_get_contents($tmp_file));
-    if (!$source) throw new Exception('Image invalide');
-    
-    $size = getimagesize($tmp_file);
-    $thumb_size = 400;
-    $src_w = $size[0]; $src_h = $size[1];
-    $dst_x = ($src_w > $thumb_size) ? ($src_w - $thumb_size)/2 : 0;
-    $dst_y = ($src_h > $thumb_size) ? ($src_h - $thumb_size)/2 : 0;
-    
-    $thumb = imagecreatetruecolor($thumb_size, $thumb_size);
-    imagecopyresampled($thumb, $source, 0, 0, $dst_x, $dst_y, $thumb_size, $thumb_size, $thumb_size, $thumb_size);
-    imagejpeg($thumb, $target_file, 85);
-    
-    imagedestroy($source);
-    imagedestroy($thumb);
-    
-    return $target_file;
-}
+// Photo de profil supprimée à l'inscription (gérée plus tard dans Profil)
 
 
 
@@ -147,21 +114,13 @@ if ($_POST && $_POST['action'] === 'register') {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $profilepic_filename = 'assets/user_icon.png';
 
-            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-                try {
-                    $profilepic_filename = uploadAndCropProfilePic($_FILES['profile_picture']['tmp_name']);
-                } catch (Exception $e) {
-                    error_log("Photo fail: " . $e->getMessage());
-                }
-            }
-
             $age = floor((time() - strtotime($birthdate)) / (365.25 * 24 * 3600));
 
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, phone, age, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
             if ($stmt->execute([$username, $email, $hash, $phone, $age, $profilepic_filename])) {
                 $_SESSION['user_id'] = $pdo->lastInsertId();
                 $_SESSION['username'] = $username;
-                header('Location: /netchat/public/dashboard');
+                header('Location: /netchat/public/');
                 exit;
             } else {
                 $error = "Pseudo ou email déjà utilisé";
@@ -270,15 +229,6 @@ if ($_POST && $_POST['action'] === 'register') {
             <div class="invalid-feedback">Ne correspondent pas</div>
         </div>
 
-        <div class="input-group-wrapper mb-4">
-    <div class="floating-icon"><i class="fas fa-camera"></i></div>
-    <input type="file" name="profile_picture" id="profile_picture" class="form-control form-control-lg py-3" accept="image/*" data-cropper>
-    <div class="invalid-feedback">Image JPG/PNG (max 5Mo)</div>
-    <div class="crop-preview mt-2" style="display:none;">
-        <img id="crop-preview" class="rounded-circle mx-auto d-block" width="100" height="100" style="object-fit:cover;">
-    </div>
-</div>
-
         <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">
             <i class="fas fa-rocket me-2"></i>S'inscrire
         </button>
@@ -347,37 +297,6 @@ if ($_POST && $_POST['action'] === 'register') {
                 this.setCustomValidity('');
             }
         });
-
-        <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.1/dist/cropper.css">
-<script src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>
-<script>
-let cropper;
-document.getElementById('profile_picture').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const img = document.getElementById('crop-preview');
-            img.src = ev.target.result;
-            img.style.display = 'block';
-            img.parentElement.style.display = 'block';
-            
-            // Init Cropper (carré 1:1)
-            const cropContainer = document.createElement('div');
-            cropContainer.innerHTML = `<img id="crop-image" src="${ev.target.result}">`;
-            img.parentElement.appendChild(cropContainer);
-            
-            cropper = new Cropper(document.getElementById('crop-image'), {
-                aspectRatio: 1,
-                viewMode: 1,
-                autoCropArea: 0.8,
-                preview: '#crop-preview'
-            });
-        };
-        reader.readAsDataURL(file);
-    }
-});
-</script>
 
     </script>
 </body>
