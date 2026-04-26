@@ -8,18 +8,13 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../app/models/Notification.php';
+require_once __DIR__ . '/../app/models/Post.php';
 
 try {
     $db = Database::getInstance()->getConnection();
-    $model = new Notification($db);
-
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;
-    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-
-    $items = $model->listByUser((int)$_SESSION['user_id'], $limit, $offset);
-    echo json_encode(['notifications' => $items]);
+    $postModel = new Post($db);
+    $tags = $postModel->trendingHashtagsFromRecentPosts(220, 48);
+    echo json_encode(['tags' => $tags]);
 } catch (Exception $e) {
     echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
 }
-

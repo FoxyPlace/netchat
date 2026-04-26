@@ -10,7 +10,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="nc-layout">
     <!-- Sidebar gauche type X -->
-    <aside class="nc-sidebar d-none d-lg-block">
+    <aside class="nc-sidebar d-none d-md-block">
         <div class="nc-sidebar-inner">
             <div>
                 <a href="<?= $basePath ?? '/netchat/public' ?>/" class="nc-sidebar-logo">
@@ -22,10 +22,10 @@ include __DIR__ . '/../layouts/header.php';
                     <a href="<?= $basePath ?? '/netchat/public' ?>/" class="nav-link">
                         <i class="fas fa-home"></i><span>Accueil</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="<?= $basePath ?? '/netchat/public' ?>/notifications" class="nav-link">
                         <i class="fas fa-bell"></i><span>Notifications</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="<?= $basePath ?? '/netchat/public' ?>/chat" class="nav-link">
                         <i class="fas fa-comments"></i><span>Chat</span>
                     </a>
                     <a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=<?= (int)$_SESSION['user_id'] ?>" class="nav-link active">
@@ -102,23 +102,17 @@ include __DIR__ . '/../layouts/header.php';
                                     <i class="fas fa-edit me-2"></i>Modifier le profil
                                 </a>
                             <?php else: ?>
-                                <!-- Bouton s'abonner / se désabonner et demande d'amis -->
+                                <!-- Bouton s'abonner / se désabonner + Message -->
                                     <div class="d-flex justify-content-center gap-2 mt-3">
                                         <button id="followBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($isFollowing) ? 'btn-outline-secondary' : 'btn-primary') ?> btn-lg">
                                             <i class="fas fa-user-plus me-2"></i>
                                             <span id="followBtnText"><?= (!empty($isFollowing) ? 'Se désabonner' : "S'abonner") ?></span>
                                         </button>
 
-                                        <?php if (!empty($isFriend)): ?>
-                                            <button id="friendBtn" class="btn btn-secondary btn-lg">Amis</button>
-                                        <?php else: ?>
-                                            <?php if (!empty($incomingRequest)): ?>
-                                                <button id="friendAcceptBtn" data-user="<?= $profile_user_id ?>" class="btn btn-success btn-lg">Accepter</button>
-                                            <?php else: ?>
-                                                <button id="friendBtn" data-user="<?= $profile_user_id ?>" class="btn <?= (!empty($outgoingRequest) ? 'btn-outline-secondary' : 'btn-outline-primary') ?> btn-lg">
-                                                    <span id="friendBtnText"><?= (!empty($outgoingRequest) ? 'Demande envoyée' : 'Demande d\'amis') ?></span>
-                                                </button>
-                                            <?php endif; ?>
+                                        <?php if (!empty($isFollowing)): ?>
+                                            <a href="<?= $basePath ?? '/netchat/public' ?>/chat?user=<?= (int)$profile_user_id ?>" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-paper-plane me-2"></i>Message
+                                            </a>
                                         <?php endif; ?>
                                     </div>
                             <?php endif; ?>
@@ -168,11 +162,18 @@ include __DIR__ . '/../layouts/header.php';
                                                     <?= nl2br(htmlspecialchars($post['content'])) ?>
                                                 </p>
                                                 
-                                                <?php if (!empty($post['image_url'])): ?>
-                                                    <img src="<?= $basePath ?? '/netchat/public' ?>/<?= htmlspecialchars($post['image_url']) ?>" 
-                                                         class="img-fluid rounded-3 mb-3" 
-                                                         style="max-height: 400px; width: 100%; object-fit: cover;" 
-                                                         alt="Image du post">
+                                                <?php if (!empty($post['image_url'])):
+                                                    $mediaExt = strtolower(pathinfo($post['image_url'], PATHINFO_EXTENSION));
+                                                    $videoExts = ['mp4', 'webm', 'mov', 'm4v'];
+                                                    $isVid = in_array($mediaExt, $videoExts, true);
+                                                    ?>
+                                                    <div class="nc-post-media<?= $isVid ? ' nc-post-media--video' : '' ?>">
+                                                        <?php if ($isVid): ?>
+                                                            <video src="<?= $basePath ?? '/netchat/public' ?>/<?= htmlspecialchars($post['image_url']) ?>" controls playsinline preload="metadata"></video>
+                                                        <?php else: ?>
+                                                            <img src="<?= $basePath ?? '/netchat/public' ?>/<?= htmlspecialchars($post['image_url']) ?>" alt="">
+                                                        <?php endif; ?>
+                                                    </div>
                                                 <?php endif; ?>
                                                 
                                                 <div class="d-flex gap-3 align-items-center">
@@ -234,56 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(err);
         }
     });
-    // Friend request toggle
-    const friendBtn = document.getElementById('friendBtn');
-    if (friendBtn) {
-        friendBtn.addEventListener('click', async function() {
-            const target = this.getAttribute('data-user');
-            if (!target) return;
-            try {
-                const form = new FormData();
-                form.append('target_id', target);
-                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/friend_toggle.php', { method: 'POST', body: form });
-                const data = await res.json();
-                if (data.error) { alert(data.error); return; }
-                const textEl = document.getElementById('friendBtnText');
-                if (data.requested) {
-                    if (textEl) textEl.textContent = 'Demande envoyée';
-                    friendBtn.classList.remove('btn-outline-primary');
-                    friendBtn.classList.add('btn-outline-secondary');
-                } else {
-                    if (textEl) textEl.textContent = 'Demande d\'amis';
-                    friendBtn.classList.remove('btn-outline-secondary');
-                    friendBtn.classList.add('btn-outline-primary');
-                }
-            } catch (err) { console.error(err); }
-        });
-    }
-
-    // Accept friend request (incoming)
-    const friendAcceptBtn = document.getElementById('friendAcceptBtn');
-    if (friendAcceptBtn) {
-        friendAcceptBtn.addEventListener('click', async function() {
-            const requester = this.getAttribute('data-user');
-            if (!requester) return;
-            try {
-                const form = new FormData();
-                form.append('requester_id', requester);
-                const res = await fetch('<?= $basePath ?? '/netchat/public' ?>/friend_accept.php', { method: 'POST', body: form });
-                const data = await res.json();
-                if (data.error) { alert(data.error); return; }
-                if (data.accepted) {
-                    // replace buttons
-                    this.textContent = 'Amis';
-                    this.classList.remove('btn-success');
-                    this.classList.add('btn-secondary');
-                    const followBtn = document.getElementById('followBtn');
-                    if (followBtn) {
-                        // no automatic action on follow
-                    }
-                }
-            } catch (err) { console.error(err); }
-        });
-    }
+    // Système d'amis supprimé
 });
 </script>

@@ -3,7 +3,11 @@ config.php
 .env
 *.log
 
-# Photos uploadées par les utilisateurs
+# Photos / médias uploadés (contenu utilisateur, pas le code)
+public/assets/posts/*
+!public/assets/posts/.gitkeep
+public/assets/users_profile_pictures/*
+!public/assets/users_profile_pictures/.gitkeep
 assets/users_profile_pictures/*
 !assets/users_profile_pictures/.gitkeep
 

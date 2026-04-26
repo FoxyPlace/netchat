@@ -13,13 +13,8 @@ require_once __DIR__ . '/../app/models/Notification.php';
 try {
     $db = Database::getInstance()->getConnection();
     $model = new Notification($db);
-
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;
-    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-
-    $items = $model->listByUser((int)$_SESSION['user_id'], $limit, $offset);
-    echo json_encode(['notifications' => $items]);
+    $count = $model->countUnread((int)$_SESSION['user_id']);
+    echo json_encode(['unread' => $count]);
 } catch (Exception $e) {
     echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
 }
-

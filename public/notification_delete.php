@@ -13,13 +13,22 @@ require_once __DIR__ . '/../app/models/Notification.php';
 try {
     $db = Database::getInstance()->getConnection();
     $model = new Notification($db);
+    $userId = (int)$_SESSION['user_id'];
 
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;
-    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+    if (isset($_POST['all']) && (string)$_POST['all'] === '1') {
+        $model->deleteAllForUser($userId);
+        echo json_encode(['success' => true]);
+        exit;
+    }
 
-    $items = $model->listByUser((int)$_SESSION['user_id'], $limit, $offset);
-    echo json_encode(['notifications' => $items]);
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) {
+        echo json_encode(['error' => 'id requis']);
+        exit;
+    }
+
+    $model->deleteById($userId, $id);
+    echo json_encode(['success' => true]);
 } catch (Exception $e) {
     echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
 }
-

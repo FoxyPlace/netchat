@@ -15,6 +15,25 @@ class Comment {
         if (!$ok) return false;
         $commentId = (int)$this->db->lastInsertId();
 
+        // notification au propriétaire du post (commentaire)
+        try {
+            if (class_exists('Notification')) {
+                $q = $this->db->prepare("SELECT user_id, content FROM posts WHERE id = ?");
+                $q->execute([(int)$postId]);
+                $p = $q->fetch(PDO::FETCH_ASSOC);
+                if ($p) {
+                    $ownerId = (int)$p['user_id'];
+                    if ($ownerId && $ownerId !== (int)$userId) {
+                        $notif = new Notification($this->db);
+                        $excerpt = mb_substr(strip_tags((string)$content), 0, 120);
+                        $notif->create($ownerId, 'comment', (int)$userId, (int)$postId, ['post_id' => (int)$postId, 'comment_id' => (int)$commentId, 'excerpt' => $excerpt]);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // ignore
+        }
+
         // handle mentions in comment
         $mentions = $this->extractMentions($content);
         if (!empty($mentions)) {

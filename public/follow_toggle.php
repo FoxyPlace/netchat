@@ -8,9 +8,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../app/models/Notification.php';
 
 try {
     $db = Database::getInstance()->getConnection();
+    $notif = new Notification($db);
     $userId = (int)$_SESSION['user_id'];
     $targetId = isset($_POST['target_id']) ? (int)$_POST['target_id'] : 0;
 
@@ -42,6 +44,11 @@ try {
         $upd->execute([$targetId]);
         $db->commit();
         $following = true;
+
+        // notification follow (si pas soi-même)
+        if ($targetId !== $userId) {
+            $notif->create($targetId, 'follow', $userId, null, null);
+        }
     }
 
     // current followers count

@@ -1,17 +1,17 @@
 <?php
 require_once __DIR__ . '/../../core/BaseController.php';
 require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/Notification.php';
+require_once __DIR__ . '/../models/Message.php';
 
-class NotificationsController extends BaseController {
+class ChatController extends BaseController {
     private $userModel;
-    private $notificationModel;
+    private $messageModel;
 
     public function __construct() {
         parent::__construct();
         $this->requireAuth();
         $this->userModel = new User($this->db);
-        $this->notificationModel = new Notification($this->db);
+        $this->messageModel = new Message($this->db);
     }
 
     public function index() {
@@ -26,12 +26,17 @@ class NotificationsController extends BaseController {
             $user_profile_picture = 'assets/user_icon.png';
         }
 
-        $unread = $this->notificationModel->countUnread((int)$_SESSION['user_id']);
+        $openUserId = isset($_GET['user']) ? (int)$_GET['user'] : 0;
+        if ($openUserId === (int)$_SESSION['user_id']) {
+            $openUserId = 0;
+        }
+        $openUser = $openUserId > 0 ? $this->userModel->findById($openUserId) : null;
 
-        $this->view('notifications/index', [
+        $this->view('chat/index', [
             'user' => $user,
             'user_profile_picture' => $user_profile_picture,
-            'unread_count' => $unread
+            'open_user' => $openUser,
+            'open_user_id' => $openUserId
         ]);
     }
 }

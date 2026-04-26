@@ -10,7 +10,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="nc-layout">
     <!-- Sidebar gauche type X -->
-    <aside class="nc-sidebar d-none d-lg-block">
+    <aside class="nc-sidebar d-none d-md-block">
         <div class="nc-sidebar-inner">
             <div>
                 <a href="<?= $basePath ?? '/netchat/public' ?>/" class="nc-sidebar-logo">
@@ -22,10 +22,10 @@ include __DIR__ . '/../layouts/header.php';
                     <a href="<?= $basePath ?? '/netchat/public' ?>/" class="nav-link">
                         <i class="fas fa-home"></i><span>Accueil</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="<?= $basePath ?? '/netchat/public' ?>/notifications" class="nav-link">
                         <i class="fas fa-bell"></i><span>Notifications</span>
                     </a>
-                    <a href="#" class="nav-link">
+                    <a href="<?= $basePath ?? '/netchat/public' ?>/chat" class="nav-link">
                         <i class="fas fa-comments"></i><span>Chat</span>
                     </a>
                     <a href="<?= $basePath ?? '/netchat/public' ?>/profile?id=<?= (int)$_SESSION['user_id'] ?>" class="nav-link">

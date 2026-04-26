@@ -1,38 +1,30 @@
 <?php
 require_once __DIR__ . '/../../core/BaseController.php';
 require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/Notification.php';
 
-class NotificationsController extends BaseController {
+class SearchController extends BaseController {
     private $userModel;
-    private $notificationModel;
 
     public function __construct() {
         parent::__construct();
         $this->requireAuth();
         $this->userModel = new User($this->db);
-        $this->notificationModel = new Notification($this->db);
     }
 
     public function index() {
         $user = $this->userModel->findById($_SESSION['user_id']);
-        if (!$user) {
-            $this->redirect('/login');
-        }
-
         $user_profile_picture = $user['profile_picture'] ?? 'assets/user_icon.png';
         $user_profile_picture_path = __DIR__ . '/../../public/' . $user_profile_picture;
         if (!file_exists($user_profile_picture_path)) {
             $user_profile_picture = 'assets/user_icon.png';
         }
 
-        $unread = $this->notificationModel->countUnread((int)$_SESSION['user_id']);
+        $q = isset($_GET['q']) ? (string)$_GET['q'] : '';
 
-        $this->view('notifications/index', [
+        $this->view('search/index', [
             'user' => $user,
             'user_profile_picture' => $user_profile_picture,
-            'unread_count' => $unread
+            'initial_query' => $q,
         ]);
     }
 }
-
