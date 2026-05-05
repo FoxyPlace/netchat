@@ -139,6 +139,25 @@ include __DIR__ . '/../layouts/header.php';
     </aside>
 </div>
 
+<!-- Report Modal (global) -->
+<div id="ncReportModal" class="nc-modal-backdrop" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;z-index:2000">
+    <div class="nc-modal-box" style="background:#fff;padding:18px;border-radius:8px;max-width:600px;width:90%;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0">Signaler un post</h5>
+            <button type="button" id="ncReportClose" class="btn btn-sm btn-outline-secondary">✕</button>
+        </div>
+        <p class="text-muted small">Expliquez brièvement pourquoi vous signalez ce contenu. Votre signalement sera examiné par l'équipe de modération.</p>
+        <div>
+            <textarea id="ncReportReason" class="form-control mb-2" rows="4" placeholder="Motif du signalement..." required></textarea>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" id="ncReportCancel" class="btn btn-secondary">Annuler</button>
+                <button type="button" id="ncReportSubmit" class="btn btn-warning">Signaler</button>
+            </div>
+            <div id="ncReportMessage" class="mt-2"></div>
+        </div>
+    </div>
+</div>
+
 <script>
     const basePath = <?= json_encode($basePath ?? '/netchat/public') ?>;
     let offset = 0;
@@ -245,6 +264,10 @@ include __DIR__ . '/../layouts/header.php';
                             <button class="btn btn-outline-primary btn-sm like-btn" data-post="${post.id}"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</button>
                             <button class="btn btn-outline-primary btn-sm comment-btn" data-post="${post.id}"><i class="fas fa-comment"></i> Commenter (${post.comments_count || 0})</button>
                             ${post.user_id === currentUserId ? `<button class="btn btn-outline-danger btn-sm delete-btn" data-post="${post.id}"><i class="fas fa-trash"></i> Supprimer</button>` : ''}
+                            <!-- Report button -->
+                            <button class="btn btn-outline-warning btn-sm report-btn ms-2" data-post="${post.id}" data-post-user="${post.user_id}" title="Signaler ce post">
+                                <i class="fas fa-flag"></i>
+                            </button>
                         </div>
 
                         <div class="mt-3 post-comments" data-post="${post.id}">
@@ -642,6 +665,64 @@ include __DIR__ . '/../layouts/header.php';
             window._postVideoPreviewUrl = null;
         }
     }
+
+    // --- Report modal handlers ---
+    let _ncReportState = { postId: null, reportedUserId: null };
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest && e.target.closest('.report-btn');
+        if (!btn) return;
+        // ouvrir modal
+        _ncReportState.postId = btn.getAttribute('data-post');
+        _ncReportState.reportedUserId = btn.getAttribute('data-post-user');
+        const modal = document.getElementById('ncReportModal');
+        const ta = document.getElementById('ncReportReason');
+        const msg = document.getElementById('ncReportMessage');
+        if (ta) ta.value = '';
+        if (msg) msg.innerHTML = '';
+        if (modal) modal.style.display = 'flex';
+    });
+
+    document.getElementById('ncReportClose').addEventListener('click', () => {
+        document.getElementById('ncReportModal').style.display = 'none';
+    });
+    document.getElementById('ncReportCancel').addEventListener('click', () => {
+        document.getElementById('ncReportModal').style.display = 'none';
+    });
+
+    document.getElementById('ncReportSubmit').addEventListener('click', async () => {
+        const reasonEl = document.getElementById('ncReportReason');
+        const msgEl = document.getElementById('ncReportMessage');
+        if (!reasonEl) return;
+        const reason = reasonEl.value.trim();
+        if (!reason) {
+            msgEl.innerHTML = '<div class="alert alert-danger">Veuillez saisir un motif.</div>';
+            return;
+        }
+
+        const form = new FormData();
+        form.append('post_id', _ncReportState.postId);
+        if (_ncReportState.reportedUserId) form.append('reported_user_id', _ncReportState.reportedUserId);
+        form.append('reason', reason);
+
+        try {
+            const res = await fetch(`${basePath}/report_submit.php`, { method: 'POST', body: form });
+            const j = await res.json();
+            if (j.error) {
+                msgEl.innerHTML = `<div class="alert alert-danger">${escapeHtml(j.error)}</div>`;
+                return;
+            }
+            if (j.success) {
+                msgEl.innerHTML = `<div class="alert alert-success">${escapeHtml(j.message || 'Signalement envoyé.')}</div>`;
+                // fermer après un court délai
+                setTimeout(() => { document.getElementById('ncReportModal').style.display = 'none'; }, 900);
+                return;
+            }
+            msgEl.innerHTML = '<div class="alert alert-danger">Réponse inattendue du serveur.</div>';
+        } catch (err) {
+            console.error(err);
+            msgEl.innerHTML = '<div class="alert alert-danger">Erreur réseau.</div>';
+        }
+    });
 
     (function initPostImageCropModal() {
         const modal = document.getElementById('ncImageCropModal');

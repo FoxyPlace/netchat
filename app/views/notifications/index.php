@@ -86,6 +86,10 @@ function notifLabel(n) {
         case 'like': return `${actor} a aimé ton post`;
         case 'comment': return `${actor} a commenté ton post`;
         case 'message_request': return `${actor} veut t’envoyer un message`;
+        case 'report':
+            // Pour les signalements, afficher un message simple sans préfixe acteur
+            if (n.data && n.data.message) return `${n.data.message}`;
+            return 'Votre signalement est en cours de traitement.';
         default: return `${actor} — notification`;
     }
 }

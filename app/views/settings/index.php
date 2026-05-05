@@ -163,6 +163,20 @@ include __DIR__ . '/../layouts/header.php';
                             <!-- Section déconnexion -->
                             <hr class="my-4">      
                             <div class="d-flex justify-content-end">
+                                    <?php
+                                        // Vérifier si l'utilisateur est admin via account_type ou ancien champ admin
+                                        $isAdmin = false;
+                                        if (!empty($user['account_type']) && in_array($user['account_type'], ['administrator', 'moderator'], true)) {
+                                            $isAdmin = true;
+                                        } elseif (!empty($user['admin']) && (int)$user['admin'] === 1) {
+                                            $isAdmin = true;
+                                        }
+                                    ?>
+                                    <?php if ($isAdmin): ?>
+                                        <a href="<?= $basePath ?? '/netchat/public' ?>/admin" class="btn btn-outline-secondary me-auto">
+                                            <i class="fas fa-shield-alt me-2"></i>Panel administrateur
+                                        </a>
+                                    <?php endif; ?>
                                 <!-- Appel MVC : route /logout gérée par LogoutController -->
                                 <a href="<?= $basePath ?>/logout" class="btn btn-outline-danger">
                                     <i class="fas fa-sign-out-alt me-2"></i>Se déconnecter

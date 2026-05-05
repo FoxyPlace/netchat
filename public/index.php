@@ -47,6 +47,9 @@ $router->get('/profil', 'ProfileController', 'show');
 $router->get('/settings', 'SettingsController', 'index');
 $router->post('/settings', 'SettingsController', 'index');
 
+// Admin panel (accessible seulement aux administrateurs - contrôlé dans AdminController)
+$router->get('/admin', 'AdminController', 'index');
+
 // Comments (MVC)
 $router->post('/comment/create', 'CommentController', 'create');
 $router->post('/comment/delete', 'CommentController', 'delete');
