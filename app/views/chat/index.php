@@ -292,8 +292,17 @@ async function loadMessages(scrollBottom = false) {
 
     box.innerHTML = items.map(m => {
         const mine = parseInt(m.sender_id, 10) === currentUserId;
+        const senderName = mine ? 'Vous' : (m.sender_username || 'Inconnu');
+        const senderPic = mine ? '' : (m.sender_profile_picture ? `${basePath}/${m.sender_profile_picture}` : `${basePath}/assets/user_icon.png`);
+        const showSender = !mine;
         return `
             <div class="nc-msg-row ${mine ? 'mine' : ''}">
+                ${showSender ? `
+                <div class="nc-msg-sender">
+                    <img class="nc-msg-avatar" src="${senderPic}" alt="">
+                    <span class="nc-msg-sender-name">${escapeHtml(senderName)}</span>
+                </div>
+                ` : ''}
                 <div class="nc-msg">
                     <div class="nc-msg-text">${escapeHtml(m.content || '')}</div>
                     <div class="nc-msg-time">${relativeTime(m.created_at)}</div>

@@ -26,8 +26,8 @@ class Message {
         $sql = "
             SELECT 
                 t.other_user_id,
-                u.username,
-                u.profile_picture,
+                CASE WHEN t.other_user_id = 0 THEN 'NETCHAT' ELSE u.username END AS username,
+                CASE WHEN t.other_user_id = 0 THEN 'assets/logo.png' ELSE u.profile_picture END AS profile_picture,
                 t.last_message,
                 t.last_at,
                 COALESCE(unread.unread_count, 0) AS unread_count
@@ -49,7 +49,7 @@ class Message {
                 FROM messages m
                 WHERE (m.sender_id = :uid OR m.receiver_id = :uid)
             ) t ON t.other_user_id = x.other_user_id AND t.last_at = x.last_at
-            JOIN users u ON u.id = t.other_user_id
+            LEFT JOIN users u ON u.id = t.other_user_id AND t.other_user_id != 0
             LEFT JOIN (
                 SELECT sender_id AS other_user_id, COUNT(*) AS unread_count
                 FROM messages
@@ -77,15 +77,17 @@ class Message {
         }
 
         $stmt = $this->db->prepare("
-            SELECT m.*, su.username AS sender_username, su.profile_picture AS sender_profile_picture
+            SELECT m.*,
+                   CASE WHEN m.sender_id = 0 THEN 'NETCHAT' ELSE su.username END AS sender_username,
+                   CASE WHEN m.sender_id = 0 THEN 'assets/logo.png' ELSE su.profile_picture END AS sender_profile_picture
             FROM messages m
-            JOIN users su ON su.id = m.sender_id
-            WHERE ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))
+            LEFT JOIN users su ON su.id = m.sender_id AND m.sender_id != 0
+            WHERE ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = 0 AND m.receiver_id = ?))
             $extra
             ORDER BY m.id DESC
             LIMIT " . $limit . "
         ");
-        $stmt->execute($params);
+        $stmt->execute(array_merge($params, [(int)$userId]));
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         // return ascending
         return array_reverse($rows);
@@ -94,6 +96,22 @@ class Message {
     public function markReadFromSender($receiverId, $senderId) {
         $stmt = $this->db->prepare("UPDATE messages SET is_read = 1 WHERE receiver_id = ? AND sender_id = ? AND is_read = 0");
         return $stmt->execute([(int)$receiverId, (int)$senderId]);
+    }
+
+    /**
+     * Créer un message (supporte les messages système avec sender_id = 0)
+     */
+    public function create($data) {
+        $stmt = $this->db->prepare("
+            INSERT INTO messages (sender_id, receiver_id, content, is_read) 
+            VALUES (?, ?, ?, ?)
+        ");
+        return $stmt->execute([
+            (int)$data['sender_id'],
+            (int)$data['receiver_id'],
+            (string)$data['content'],
+            (int)($data['is_read'] ?? 0)
+        ]);
     }
 }
 

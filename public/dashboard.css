@@ -782,10 +782,11 @@ body.nc-compact-nav .nc-nav-badge {
 }
 .nc-msg-row {
     display: flex;
+    flex-direction: column;
     margin-bottom: 10px;
 }
 .nc-msg-row.mine {
-    justify-content: flex-end;
+    align-items: flex-end;
 }
 .nc-msg {
     max-width: min(520px, 85%);
@@ -802,7 +803,32 @@ body.nc-compact-nav .nc-nav-badge {
     color: #0f1419;
     font-weight: 600;
     white-space: pre-wrap;
+    word-break: break-word;
     overflow-wrap: anywhere;
+}
+.nc-msg-text img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 14px;
+    margin-top: 8px;
+}
+.nc-msg-sender {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.nc-msg-sender-name {
+    font-size: 0.9rem;
+    color: #0f1419;
+    font-weight: 700;
+}
+.nc-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    object-fit: cover;
 }
 .nc-msg-time {
     margin-top: 4px;
@@ -877,6 +903,38 @@ body.nc-compact-nav .nc-nav-badge {
     .nc-chat-grid {
         grid-template-columns: 260px 1fr;
     }
+}
+
+/* Admin Panel Tabs */
+.admin-tabs .nav-link {
+    color: #111827;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    padding: 12px 24px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.7);
+    margin-right: 4px;
+    transition: all 0.3s ease;
+}
+
+.admin-tabs .nav-link:hover {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--primary-blue);
+}
+
+.admin-tabs .nav-link.active {
+    background: rgba(0, 212, 255, 0.18);
+    color: var(--primary-blue);
+    border-bottom: 2px solid var(--primary-blue);
+}
+
+.admin-tab-content {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+    border-radius: 0 24px 24px 24px;
+    padding: 24px;
 }
 
 @media (max-width: 991.98px) {

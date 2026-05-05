@@ -28,6 +28,13 @@ class AuthController extends BaseController {
             $user = $this->userModel->findByUsernameOrEmail($identifier);
             
             if ($user && password_verify($password, $user['password_hash'])) {
+                // Vérifier si l'utilisateur est banni
+                if (strpos($user['username'], 'Utilisateur Banni') === 0) {
+                    $_SESSION['banned_user_id'] = $user['id'];
+                    $this->redirect('/netchat/public/banned.php');
+                    return;
+                }
+                
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $this->redirect('/netchat/public/');

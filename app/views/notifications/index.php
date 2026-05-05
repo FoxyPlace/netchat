@@ -86,6 +86,11 @@ function notifLabel(n) {
         case 'like': return `${actor} a aimé ton post`;
         case 'comment': return `${actor} a commenté ton post`;
         case 'message_request': return `${actor} veut t’envoyer un message`;
+        case 'system':
+            if (n.data && n.data.title) {
+                return n.data.title + (n.data.message ? ': ' + n.data.message : '');
+            }
+            return 'Notification système';
         case 'report':
             // Pour les signalements, afficher un message simple sans préfixe acteur
             if (n.data && n.data.message) return `${n.data.message}`;
@@ -143,7 +148,7 @@ async function loadNotifications() {
     }
 
     list.innerHTML = items.map(n => {
-        const pic = n.actor_profile_picture || 'assets/user_icon.png';
+        const pic = n.type === 'system' ? 'assets/logo.png' : (n.actor_profile_picture || 'assets/user_icon.png');
         const cls = n.is_read ? 'nc-notif-item' : 'nc-notif-item nc-notif-unread';
         const rowCls = n.is_read ? 'nc-notif-row' : 'nc-notif-row nc-notif-row-unread';
         const href = notifLink(n);

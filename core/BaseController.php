@@ -8,6 +8,17 @@ class BaseController {
     public function __construct() {
         require_once __DIR__ . '/../config/database.php';
         $this->db = Database::getInstance()->getConnection();
+        
+        // Vérifier si l'utilisateur connecté est banni
+        if (isset($_SESSION['user_id'])) {
+            require_once __DIR__ . '/../app/models/User.php';
+            $userModel = new User($this->db);
+            if ($userModel->isBanned($_SESSION['user_id'])) {
+                session_destroy();
+                header('Location: /netchat/public/banned.php');
+                exit;
+            }
+        }
     }
     
     protected function view($viewName, $data = []) {
